@@ -63,7 +63,7 @@ function extractChatContent(raw: string): { role: 'user' | 'agent' | 'system'; c
   return null
 }
 
-const ARENA_API = process.env.NEXT_PUBLIC_ARENA_API_URL || 'http://localhost:8000'
+import { ARENA_API } from '@/config/arena'
 
 export function useHCSChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([])

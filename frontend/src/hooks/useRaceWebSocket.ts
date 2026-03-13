@@ -12,7 +12,7 @@ import type {
   PlayerState,
 } from '@/types/ws'
 
-const WS_URL = process.env.NEXT_PUBLIC_ARENA_WS_URL ?? 'ws://localhost:8000'
+import { ARENA_WS as WS_URL } from '@/config/arena'
 
 export interface RaceState {
   match_id: string

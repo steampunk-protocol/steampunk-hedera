@@ -13,7 +13,7 @@ interface AgentRanking {
   hcs_topic_id?: string
 }
 
-const ARENA_API = process.env.NEXT_PUBLIC_ARENA_API_URL || 'http://localhost:8000'
+import { ARENA_API } from '@/config/arena'
 
 function truncateAddress(address: string): string {
   return `${address.slice(0, 6)}...${address.slice(-4)}`

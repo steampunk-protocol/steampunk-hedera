@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const ARENA_API = process.env.NEXT_PUBLIC_ARENA_API_URL || 'http://localhost:8000'
+// Server-side route — uses backend URL directly (no mixed content concern)
+const ARENA_API = process.env.ARENA_BACKEND_URL || process.env.NEXT_PUBLIC_ARENA_API_URL || 'http://localhost:8000'
 
 /**
  * Proxy endpoint for sending chat messages to the matchmaker agent via the arena server.
