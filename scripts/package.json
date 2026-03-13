@@ -6,7 +6,8 @@
   "scripts": {
     "setup": "tsx setup-hedera.ts",
     "register-agents": "tsx register-agents.ts",
-    "deploy": "tsx deploy-contracts.ts"
+    "deploy": "tsx deploy-contracts.ts",
+    "e2e": "tsx e2e-test.ts"
   },
   "dependencies": {
     "@hashgraph/sdk": "^2.51.0",
