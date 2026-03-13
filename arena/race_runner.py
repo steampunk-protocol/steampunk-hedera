@@ -68,7 +68,7 @@ class RaceRunner:
         adapter: Optional[GameAdapter] = None,
     ):
         self.match_id = match_id
-        self.agents = agents
+        self.agents = [a.lower() for a in agents]
         self.track_id = track_id
         # Allow injecting adapter for testing (forces local mode)
         self._injected_adapter = adapter
@@ -190,21 +190,9 @@ class RaceRunner:
         )
         await manager.broadcast_start(self.match_id, msg)
 
-        # Create and lock prediction pool on-chain
-        pool_address = os.environ.get("PREDICTION_POOL_ADDRESS", "")
-        arena_key = os.environ.get("ARENA_PRIVATE_KEY", "")
-        rpc_url = os.environ.get("RPC_URL", DEFAULT_RPC_URL)
-        if pool_address and arena_key and rpc_url:
-            try:
-                from eth_account import Account
-                arena_account = Account.from_key(arena_key if arena_key.startswith("0x") else "0x" + arena_key)
-                numeric_match_id = match_id_to_uint256(self.match_id)
-                await asyncio.to_thread(
-                    self._create_and_lock_pool_sync,
-                    rpc_url, pool_address, numeric_match_id, self.agents, arena_account,
-                )
-            except Exception as e:
-                logger.error(f"PredictionPool create/lock failed for match {self.match_id}: {e}")
+        # Lock prediction pool on-chain (pool was created at match creation in queue.py)
+        from arena.pool_lifecycle import lock_pool_on_chain
+        await lock_pool_on_chain(self.match_id)
 
     async def _run_race_loop(self) -> dict:
         """
@@ -307,20 +295,14 @@ class RaceRunner:
                 logger.error(f"On-chain Wager settlement failed for match {self.match_id}: {e}")
 
         # ── 3b. Settle PredictionPool on-chain ──
-        pool_address = os.environ.get("PREDICTION_POOL_ADDRESS", "")
+        from arena.pool_lifecycle import settle_pool_on_chain
         winner_for_pool = None
         for addr, pos in zip(normalized["agents"], normalized["finalPositions"]):
             if pos == 1 and addr != "0x" + "0" * 40:
                 winner_for_pool = addr
                 break
-        if arena_account and rpc_url and pool_address and winner_for_pool:
-            try:
-                await asyncio.to_thread(
-                    self._settle_pool_sync,
-                    rpc_url, pool_address, normalized["matchId"], winner_for_pool, arena_account,
-                )
-            except Exception as e:
-                logger.error(f"PredictionPool settlement failed for match {self.match_id}: {e}")
+        if winner_for_pool:
+            await settle_pool_on_chain(self.match_id, normalized["matchId"], winner_for_pool)
 
         # ── 4. Load current Elo from DB, calculate deltas, persist ──
         current_ratings = {}
@@ -364,7 +346,7 @@ class RaceRunner:
         winner_address_db = None
         for addr, pos in zip(normalized["agents"], normalized["finalPositions"]):
             if pos == 1 and addr != "0x" + "0" * 40:
-                winner_address_db = addr
+                winner_address_db = addr.lower()
                 break
 
         # Compute fallback proof_hash if on-chain hash unavailable
@@ -540,88 +522,6 @@ class RaceRunner:
                 logger.error(f"Wager.settle() tx reverted: {tx_hash.hex()}")
         else:
             logger.warning(f"No winner found for match {self.match_id} — skipping Wager.settle()")
-
-    def _create_and_lock_pool_sync(self, rpc_url, pool_address, numeric_match_id, agents, arena_account):
-        """Create and immediately lock a prediction pool — blocking call."""
-        from web3 import Web3
-        import json as _json
-        from pathlib import Path
-
-        w3 = Web3(Web3.HTTPProvider(rpc_url))
-        abis_dir = Path(__file__).parent.parent / "contracts" / "abis"
-        with open(abis_dir / "PredictionPool.json") as f:
-            abi_data = _json.load(f)
-        pool_abi = abi_data.get("abi", abi_data)
-
-        pool = w3.eth.contract(
-            address=Web3.to_checksum_address(pool_address),
-            abi=pool_abi,
-        )
-        agent_addrs = [Web3.to_checksum_address(a) for a in agents if a != "0x" + "0" * 40]
-
-        # createPool
-        nonce = w3.eth.get_transaction_count(arena_account.address)
-        tx = pool.functions.createPool(numeric_match_id, agent_addrs).build_transaction({
-            "from": arena_account.address,
-            "nonce": nonce,
-            "gas": 300000,
-        })
-        signed_tx = arena_account.sign_transaction(tx)
-        tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
-        receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
-        if receipt.status == 1:
-            logger.info(f"PredictionPool.createPool() succeeded for match {self.match_id}")
-        else:
-            logger.error(f"PredictionPool.createPool() reverted: {tx_hash.hex()}")
-            return
-
-        # lockPool
-        nonce = w3.eth.get_transaction_count(arena_account.address)
-        tx = pool.functions.lockPool(numeric_match_id).build_transaction({
-            "from": arena_account.address,
-            "nonce": nonce,
-            "gas": 200000,
-        })
-        signed_tx = arena_account.sign_transaction(tx)
-        tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
-        receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
-        if receipt.status == 1:
-            logger.info(f"PredictionPool.lockPool() succeeded for match {self.match_id}")
-        else:
-            logger.error(f"PredictionPool.lockPool() reverted: {tx_hash.hex()}")
-
-    def _settle_pool_sync(self, rpc_url, pool_address, numeric_match_id, winner_address, arena_account):
-        """Settle prediction pool — blocking call."""
-        from web3 import Web3
-        import json as _json
-        from pathlib import Path
-
-        w3 = Web3(Web3.HTTPProvider(rpc_url))
-        abis_dir = Path(__file__).parent.parent / "contracts" / "abis"
-        with open(abis_dir / "PredictionPool.json") as f:
-            abi_data = _json.load(f)
-        pool_abi = abi_data.get("abi", abi_data)
-
-        pool = w3.eth.contract(
-            address=Web3.to_checksum_address(pool_address),
-            abi=pool_abi,
-        )
-
-        tx = pool.functions.settlePool(
-            numeric_match_id,
-            Web3.to_checksum_address(winner_address),
-        ).build_transaction({
-            "from": arena_account.address,
-            "nonce": w3.eth.get_transaction_count(arena_account.address),
-            "gas": 200000,
-        })
-        signed_tx = arena_account.sign_transaction(tx)
-        tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
-        receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
-        if receipt.status == 1:
-            logger.info(f"PredictionPool.settlePool() succeeded for match {self.match_id}")
-        else:
-            logger.error(f"PredictionPool.settlePool() reverted: {tx_hash.hex()}")
 
     async def _broadcast_betting_update(self, players: list[PlayerState]) -> None:
         """Broadcast stub betting odds (equal distribution for MVP)."""

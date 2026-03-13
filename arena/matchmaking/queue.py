@@ -14,6 +14,7 @@ from sqlalchemy import select, desc, func
 
 from arena.db.models import get_session, AgentModel, MatchModel
 from arena.utils import match_id_to_uint256
+from arena.pool_lifecycle import create_pool_on_chain
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -56,7 +57,7 @@ async def register_agent(
         hcs_topic_id=registration.hcs_topic_id,
         name=registration.name,
         model_name=registration.model_name,
-        owner_wallet=registration.owner_wallet,
+        owner_wallet=registration.owner_wallet.lower(),
         elo=1200,
         matches_played=0,
         registered_at=int(time.time() * 1000),
@@ -113,6 +114,10 @@ async def join_queue(
                 f"Match created: {match_id} (on-chain ID: {numeric_match_id}) "
                 f"with {participants}, wager={match_wager} STEAM"
             )
+
+            # Create prediction pool on-chain so spectators can bet while match is pending
+            asyncio.ensure_future(create_pool_on_chain(match_id, participants))
+
             return {
                 "status": "matched",
                 "match_id": match_id,

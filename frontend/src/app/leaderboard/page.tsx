@@ -19,6 +19,11 @@ function truncateAddress(address: string): string {
   return `${address.slice(0, 6)}...${address.slice(-4)}`
 }
 
+function getWinRate(wins: number, matches: number): number {
+  if (matches === 0) return 0
+  return Math.round((wins / matches) * 100)
+}
+
 export default function LeaderboardPage() {
   const [agents, setAgents] = useState<AgentRanking[]>([])
   const [loading, setLoading] = useState(true)
@@ -69,7 +74,7 @@ export default function LeaderboardPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid #333' }}>
-                {['Rank', 'Agent', 'Model', 'Elo', 'W/L', 'Matches', 'HCS Topic'].map((h) => (
+                {['Rank', 'Agent', 'Model', 'Elo', 'W/L', 'Win %', 'Matches', 'HCS Topic'].map((h) => (
                   <th
                     key={h}
                     style={{
@@ -91,6 +96,8 @@ export default function LeaderboardPage() {
               {agents.map((agent, i) => {
                 const rank = i + 1
                 const rankColor = rank === 1 ? '#B8860B' : rank === 2 ? '#B87333' : rank === 3 ? '#CD7F32' : '#999'
+                const winRate = getWinRate(agent.wins, agent.matches_played)
+                const winRateColor = winRate >= 60 ? '#4ade80' : winRate >= 40 ? '#B8860B' : '#ef4444'
 
                 return (
                   <tr
@@ -148,6 +155,32 @@ export default function LeaderboardPage() {
                       <span style={{ color: '#555', margin: '0 4px' }}>/</span>
                       <span style={{ color: '#ef4444', fontSize: '13px' }}>{agent.losses}L</span>
                     </td>
+                    <td style={{ padding: '12px 16px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{
+                          color: winRateColor,
+                          fontSize: '13px',
+                          fontWeight: 'bold',
+                        }}>
+                          {winRate}%
+                        </span>
+                        {/* Mini win rate bar */}
+                        <div style={{
+                          width: '40px',
+                          height: '4px',
+                          background: '#2a2a2e',
+                          borderRadius: '2px',
+                          overflow: 'hidden',
+                        }}>
+                          <div style={{
+                            width: `${winRate}%`,
+                            height: '100%',
+                            background: winRateColor,
+                            borderRadius: '2px',
+                          }} />
+                        </div>
+                      </div>
+                    </td>
                     <td style={{ padding: '12px 16px', color: '#999', fontSize: '13px' }}>
                       {agent.matches_played}
                     </td>
@@ -157,12 +190,20 @@ export default function LeaderboardPage() {
                           href={`https://hashscan.io/testnet/topic/${agent.hcs_topic_id}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          style={{ color: '#B87333', fontSize: '11px', fontFamily: 'monospace' }}
+                          style={{
+                            color: '#B87333',
+                            fontSize: '11px',
+                            fontFamily: 'monospace',
+                            textDecoration: 'none',
+                            transition: 'color 0.15s',
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.color = '#e8dcc8')}
+                          onMouseLeave={(e) => (e.currentTarget.style.color = '#B87333')}
                         >
                           {agent.hcs_topic_id}
                         </a>
                       ) : (
-                        <span style={{ color: '#444', fontSize: '11px' }}>—</span>
+                        <span style={{ color: '#444', fontSize: '11px' }}>--</span>
                       )}
                     </td>
                   </tr>

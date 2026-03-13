@@ -1,0 +1,33 @@
+{
+  "info": {
+    "position":      {"address": 16351788, "type": "u8"},
+    "lap":           {"address": 16351880, "type": "u8"},
+    "speed":         {"address": 16351760, "type": ">f"},
+    "x":             {"address": 16351736, "type": ">f"},
+    "y":             {"address": 16351740, "type": ">f"},
+    "z":             {"address": 16351744, "type": ">f"},
+    "finished":      {"address": 16351836, "type": "u8"}
+  },
+  "_notes": {
+    "source": "TASVideos GameResources/N64/MarioKart64 + Hack64 wiki",
+    "base": "RDRAM decimal offsets (N64 base 0x80000000 = decimal 2147483648, subtract to get RDRAM offset)",
+    "addresses_hex": {
+      "position":  "0xF9AAEC",
+      "lap":       "0xF9AB48",
+      "speed":     "0xF9AAD0",
+      "x":         "0xF9AAB8",
+      "y":         "0xF9AABC",
+      "z":         "0xF9AAC0",
+      "finished":  "0xF9AB1C"
+    },
+    "status": "UNCONFIRMED — addresses from community research, must be verified against live emulator",
+    "verification_required": "Before W2-A: run test_single_agent.py, observe RAM reads, confirm against known game state",
+    "player_offsets": {
+      "note": "P2/P3/P4 are at +0x100, +0x200, +0x300 byte offsets from P1 base (UNCONFIRMED)",
+      "p1_base_hex": "0xF9AAB8",
+      "p2_base_hex": "0xF9ABB8",
+      "p3_base_hex": "0xF9ACB8",
+      "p4_base_hex": "0xF9ADB8"
+    }
+  }
+}
