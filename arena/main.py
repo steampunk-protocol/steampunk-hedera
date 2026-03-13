@@ -3,7 +3,32 @@ SteamPunk Arena Server — FastAPI entrypoint (Hedera port).
 """
 import asyncio
 import logging
+import os
 from contextlib import asynccontextmanager
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+# Load .env from project root (one level up from arena/)
+_project_root = Path(__file__).resolve().parent.parent
+load_dotenv(_project_root / ".env")
+
+# Map canonical .env names → arena-expected names (only set if not already defined)
+_ENV_ALIASES = {
+    "ARENA_PRIVATE_KEY": ["ORACLE_PRIVATE_KEY", "DEPLOYER_KEY"],
+    "MATCH_PROOF_ADDRESS": ["MATCH_PROOF_CONTRACT_ADDRESS"],
+    "WAGER_ADDRESS": ["WAGER_CONTRACT_ADDRESS"],
+    "PREDICTION_POOL_ADDRESS": ["PREDICTION_POOL_CONTRACT_ADDRESS"],
+    "RPC_URL": ["HEDERA_TESTNET_RPC"],
+    "CHAIN_ID": ["HEDERA_CHAIN_ID"],
+}
+for target, sources in _ENV_ALIASES.items():
+    if not os.environ.get(target):
+        for src in sources:
+            val = os.environ.get(src)
+            if val:
+                os.environ[target] = val
+                break
 
 logging.basicConfig(
     level=logging.INFO,

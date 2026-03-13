@@ -274,35 +274,40 @@ class RaceRunner:
         else:
             logger.warning("ARENA_PRIVATE_KEY not set — skipping on-chain signature")
 
-        # ── 2. Submit to MatchProof.submitResult() on-chain ──
-        if arena_account and rpc_url and contract_address != "0x" + "0" * 40:
-            try:
-                on_chain_tx, match_result_hash = await asyncio.to_thread(
-                    self._submit_match_proof_sync,
-                    rpc_url, contract_address, normalized, sig, arena_account,
-                )
-            except Exception as e:
-                logger.error(f"On-chain MatchProof submission failed for match {self.match_id}: {e}")
-
-        # ── 3. Settle Wager on-chain ──
-        if arena_account and rpc_url and wager_address:
-            try:
-                await asyncio.to_thread(
-                    self._settle_wager_sync,
-                    rpc_url, wager_address, normalized, arena_account,
-                )
-            except Exception as e:
-                logger.error(f"On-chain Wager settlement failed for match {self.match_id}: {e}")
-
-        # ── 3b. Settle PredictionPool on-chain ──
+        # ── 2+3+3b. On-chain calls in parallel (independent, each wrapped in try/except) ──
         from arena.pool_lifecycle import settle_pool_on_chain
         winner_for_pool = None
         for addr, pos in zip(normalized["agents"], normalized["finalPositions"]):
             if pos == 1 and addr != "0x" + "0" * 40:
                 winner_for_pool = addr
                 break
-        if winner_for_pool:
-            await settle_pool_on_chain(self.match_id, normalized["matchId"], winner_for_pool)
+
+        async def _submit_proof():
+            nonlocal on_chain_tx, match_result_hash
+            if arena_account and rpc_url and contract_address != "0x" + "0" * 40:
+                try:
+                    on_chain_tx, match_result_hash = await asyncio.to_thread(
+                        self._submit_match_proof_sync,
+                        rpc_url, contract_address, normalized, sig, arena_account,
+                    )
+                except Exception as e:
+                    logger.error(f"MatchProof.submitResult() tx reverted: {e}")
+
+        async def _settle_wager():
+            if arena_account and rpc_url and wager_address:
+                try:
+                    await asyncio.to_thread(
+                        self._settle_wager_sync,
+                        rpc_url, wager_address, normalized, arena_account,
+                    )
+                except Exception as e:
+                    logger.error(f"Wager.settle() failed: {e}")
+
+        async def _settle_pool():
+            if winner_for_pool:
+                await settle_pool_on_chain(self.match_id, normalized["matchId"], winner_for_pool)
+
+        await asyncio.gather(_submit_proof(), _settle_wager(), _settle_pool())
 
         # ── 4. Load current Elo from DB, calculate deltas, persist ──
         current_ratings = {}

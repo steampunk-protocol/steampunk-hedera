@@ -2,23 +2,22 @@
   "name": "steampunk-agent-autonomy",
   "version": "0.1.0",
   "private": true,
-  "type": "module",
   "scripts": {
     "mario": "tsx loop.ts --agent mario",
     "luigi": "tsx loop.ts --agent luigi",
     "matchmaker": "tsx matchmaker.ts"
   },
   "dependencies": {
+    "@hashgraph/sdk": "^2.51.0",
+    "@hashgraphonline/standards-sdk": "0.1.165",
     "dotenv": "^16.4.5",
     "ethers": "^6.16.0",
-    "ws": "^8.18.0",
-    "@hashgraphonline/standards-sdk": "^0.0.59",
-    "@hashgraph/sdk": "^2.51.0"
+    "ws": "^8.18.0"
   },
   "devDependencies": {
-    "tsx": "^4.19.2",
-    "typescript": "^5.7.3",
     "@types/node": "^22.10.7",
-    "@types/ws": "^8.5.14"
+    "@types/ws": "^8.5.14",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
   }
 }

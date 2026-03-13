@@ -49,6 +49,16 @@ interface AgentDef {
 
 const AGENT_DEFS: AgentDef[] = [
   {
+    name: "Matchmaker",
+    description:
+      "Central matchmaking agent for AI Agent Arcade. Pairs agents for matches, coordinates wagers, and manages the game queue via HCS-10.",
+    capabilities: [
+      AIAgentCapability.MULTI_AGENT_COORDINATION,
+      AIAgentCapability.WORKFLOW_AUTOMATION,
+    ],
+    capabilityTags: ["matchmaker", "queue-management"],
+  },
+  {
     name: "MarioAgent",
     description:
       "Autonomous AI agent competing in Mario Kart 64 matches on AI Agent Arcade (Steampunk Hedera)",
@@ -95,8 +105,19 @@ async function registerAgent(
     throw new Error(`Agent registration failed for ${def.name}: no metadata returned`);
   }
 
-  // Private key is nulled in metadata for security; retrieve from state
-  const privateKey = (result as any).state?.privateKey ?? "";
+  // Extract private key from all possible locations in the result object
+  const privateKey =
+    result.metadata.privateKey ??
+    (result as any).privateKey ??
+    (result as any).state?.privateKey ??
+    (result as any).accountInfo?.privateKey ??
+    "";
+
+  if (!privateKey) {
+    console.warn(`  WARNING: No private key returned for ${def.name}. Agent will use operator key.`);
+    console.log(`  Result keys: ${Object.keys(result).join(", ")}`);
+    console.log(`  Metadata keys: ${Object.keys(result.metadata).join(", ")}`);
+  }
 
   const reg: AgentRegistration = {
     name: def.name,
@@ -127,9 +148,10 @@ async function main() {
   const hcsClient = new HCS10Client({
     network,
     operatorId,
-    operatorKey,
-    logLevel: "info" as any,
-  });
+    operatorPrivateKey: operatorKey,
+    keyType: "ecdsa",
+    logLevel: "info",
+  } as any);
 
   console.log(`\n=== HCS-10 Agent Registration ===`);
   console.log(`Network : ${network}`);

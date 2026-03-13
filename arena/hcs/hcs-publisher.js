@@ -47,10 +47,20 @@ async function main() {
     client = Client.forTestnet();
   }
 
-  client.setOperator(
-    AccountId.fromString(operatorId),
-    PrivateKey.fromStringDer(operatorKey)
-  );
+  // Support both raw hex ECDSA and DER-encoded keys (with or without 0x prefix)
+  let privKey;
+  const rawKey = operatorKey.replace(/^0x/, "");
+  try {
+    privKey = PrivateKey.fromStringECDSA(rawKey);
+  } catch {
+    try {
+      privKey = PrivateKey.fromStringED25519(rawKey);
+    } catch {
+      privKey = PrivateKey.fromStringDer(rawKey);
+    }
+  }
+
+  client.setOperator(AccountId.fromString(operatorId), privKey);
 
   const topicId = TopicId.fromString(topicIdArg);
 

@@ -24,17 +24,24 @@ import {
 
 // ---------- Config ----------
 
-const OPERATOR_ID = process.env.HEDERA_OPERATOR_ID!;
-const OPERATOR_KEY = process.env.HEDERA_OPERATOR_KEY!;
-const NETWORK = (process.env.HEDERA_NETWORK ?? "testnet") as "testnet" | "mainnet";
-const MATCHMAKER_INBOUND = process.env.HCS_MATCHMAKER_TOPIC ?? "0.0.8187174";
-const ARENA_BASE_URL = process.env.ARENA_BASE_URL ?? "http://localhost:8000";
-const POLL_INTERVAL_MS = 3000;
+import { readFileSync } from "fs";
 
-if (!OPERATOR_ID || !OPERATOR_KEY) {
-  console.error("HEDERA_OPERATOR_ID and HEDERA_OPERATOR_KEY must be set in .env");
+// Load matchmaker agent credentials from agent-ids.json
+const agentIdsPath = resolve(__dirname, "../scripts/agent-ids.json");
+const agentIds = JSON.parse(readFileSync(agentIdsPath, "utf-8"));
+const matchmakerAgent = agentIds.agents.find((a: any) => a.name === "Matchmaker");
+
+if (!matchmakerAgent?.accountId || !matchmakerAgent?.privateKey) {
+  console.error("Matchmaker agent not found in agent-ids.json. Run: npx tsx scripts/register-agents.ts");
   process.exit(1);
 }
+
+const OPERATOR_ID = matchmakerAgent.accountId;
+const OPERATOR_KEY = matchmakerAgent.privateKey;
+const NETWORK = (process.env.HEDERA_NETWORK ?? "testnet") as "testnet" | "mainnet";
+const MATCHMAKER_INBOUND = matchmakerAgent.inboundTopicId;
+const ARENA_BASE_URL = process.env.ARENA_BASE_URL ?? "http://localhost:8000";
+const POLL_INTERVAL_MS = 3000;
 
 // ---------- State ----------
 

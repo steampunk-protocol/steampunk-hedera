@@ -1,7 +1,7 @@
 /**
  * hcs10_client.ts — Shared HCS-10 Connection Infrastructure
  *
- * Wraps @hashgraphonline/standards-sdk v0.0.59 HCS10Client with
+ * Wraps @hashgraphonline/standards-sdk HCS10Client with
  * convenience methods for the Agent Colosseum protocol.
  */
 
@@ -15,6 +15,8 @@ export interface HCS10AgentClientConfig {
   operatorId: string;
   operatorKey: string;
   network: "testnet" | "mainnet";
+  /** Key type: "ecdsa" for ECDSA secp256k1, "ed25519" for ED25519 DER-encoded. Auto-detected if omitted. */
+  keyType?: "ecdsa" | "ed25519";
 }
 
 export interface ConnectionRequest {
@@ -38,12 +40,16 @@ export class HCS10AgentClient {
 
   constructor(config: HCS10AgentClientConfig) {
     this.operatorId = config.operatorId;
+    const rawKey = config.operatorKey.replace(/^0x/, "");
+    // Auto-detect key type: DER-encoded ED25519 keys start with "302e"
+    const keyType = config.keyType ?? (rawKey.startsWith("302e") ? "ed25519" : "ecdsa");
     this.sdk = new HCS10Client({
       network: config.network,
       operatorId: config.operatorId,
-      operatorPrivateKey: config.operatorKey.replace(/^0x/, ""),
-      logLevel: "error" as any,
-    });
+      operatorPrivateKey: rawKey,
+      keyType,
+      logLevel: "error",
+    } as any);
   }
 
   /** Expose the underlying SDK client for advanced use */

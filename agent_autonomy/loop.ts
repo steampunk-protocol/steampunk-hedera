@@ -38,10 +38,11 @@ import {
 const HEDERA_RPC = process.env.HEDERA_TESTNET_RPC || "https://testnet.hashio.io/api";
 const STEAM_TOKEN_ADDRESS = process.env.STEAM_TOKEN_EVM_ADDRESS || "0x00000000000000000000000000000000007ced23";
 const WAGER_CONTRACT_ADDRESS = process.env.WAGER_CONTRACT_ADDRESS || "";
-const MATCHMAKER_TOPIC = process.env.HCS_MATCHMAKER_TOPIC || "0.0.8187174";
-const OPERATOR_KEY = (process.env.HEDERA_OPERATOR_KEY || "").replace(/^0x/, "");
-const OPERATOR_ID = process.env.HEDERA_OPERATOR_ID || "";
 const ARENA_BASE_URL = process.env.ARENA_BASE_URL || "http://localhost:8000";
+// These get overridden per-agent from agent-ids.json in runAutonomyLoop()
+let OPERATOR_KEY = (process.env.HEDERA_OPERATOR_KEY || "").replace(/^0x/, "");
+let OPERATOR_ID = process.env.HEDERA_OPERATOR_ID || "";
+let MATCHMAKER_TOPIC = process.env.HCS_MATCHMAKER_TOPIC || "0.0.8205003";
 
 const POLL_INTERVAL_MS = 3_000;
 const STEAM_DECIMALS = 8;
@@ -62,7 +63,10 @@ const ERC20_ABI = [
 
 interface AgentConfig {
   name: string;
+  accountId?: string;
+  privateKey?: string;
   inboundTopicId: string;
+  outboundTopicId?: string;
   profileTopicId: string;
   capabilities: string[];
 }
@@ -78,6 +82,19 @@ function loadAgentConfig(agentName: string): AgentConfig {
     const available = agents.map((a) => a.name).join(", ");
     throw new Error(`Agent "${agentName}" not found. Available: ${available}`);
   }
+
+  // Also load the matchmaker inbound topic
+  const matchmaker = agents.find((a: any) => a.name === "Matchmaker");
+  if (matchmaker) {
+    MATCHMAKER_TOPIC = matchmaker.inboundTopicId;
+  }
+
+  // Override operator credentials if agent has its own account
+  if (match.accountId && match.privateKey) {
+    OPERATOR_ID = match.accountId;
+    OPERATOR_KEY = match.privateKey;
+  }
+
   return match;
 }
 
@@ -367,15 +384,25 @@ async function runAutonomyLoop(agentName: string): Promise<void> {
   console.log();
 
   if (!OPERATOR_KEY) {
-    throw new Error("HEDERA_OPERATOR_KEY is required");
+    throw new Error("Agent key is required (from agent-ids.json or HEDERA_OPERATOR_KEY)");
   }
 
-  const privateKey = OPERATOR_KEY.startsWith("0x") ? OPERATOR_KEY : `0x${OPERATOR_KEY}`;
-  const provider = new ethers.JsonRpcProvider(HEDERA_RPC);
-  const wallet = new ethers.Wallet(privateKey, provider);
-  const agentAddress = wallet.address.toLowerCase();
+  // ED25519 DER keys (from agent registration) can't be used with ethers.Wallet.
+  // Only create wallet if key is ECDSA hex (for on-chain wager deposits).
+  let wallet: ethers.Wallet | null = null;
+  let agentAddress: string;
+  const isEcdsaKey = !OPERATOR_KEY.startsWith("302e") && OPERATOR_KEY.length === 64;
+  if (isEcdsaKey) {
+    const pk = OPERATOR_KEY.startsWith("0x") ? OPERATOR_KEY : `0x${OPERATOR_KEY}`;
+    const provider = new ethers.JsonRpcProvider(HEDERA_RPC);
+    wallet = new ethers.Wallet(pk, provider);
+    agentAddress = wallet.address.toLowerCase();
+  } else {
+    // Use accountId-derived EVM address for ED25519 agents
+    agentAddress = OPERATOR_ID.replace(/\./g, "").padStart(40, "0");
+  }
 
-  console.log(`Wallet   : ${agentAddress}`);
+  console.log(`Wallet   : ${agentAddress}${wallet ? "" : " (HCS-10 only, no EVM wallet)"}`);
 
   // Initialize HCS-10 client
   const hcsClient = new HCS10AgentClient({

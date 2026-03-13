@@ -11,12 +11,12 @@
   },
   "dependencies": {
     "@hashgraph/sdk": "^2.51.0",
-    "@hashgraphonline/standards-sdk": "^0.0.59",
+    "@hashgraphonline/standards-sdk": "^0.1.165",
     "dotenv": "^16.4.5"
   },
   "devDependencies": {
+    "@types/node": "^22.10.7",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.3",
-    "@types/node": "^22.10.7"
+    "typescript": "^5.7.3"
   }
 }
