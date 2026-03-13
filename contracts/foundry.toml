@@ -1,0 +1,35 @@
+[profile.default]
+src = "src"
+test = "test"
+script = "script"
+out = "out"
+libs = ["lib"]
+solc = "0.8.24"
+optimizer = true
+optimizer_runs = 200
+via_ir = true
+
+remappings = [
+  "@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/",
+  "@openzeppelin/contracts/=lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/",
+  "forge-std/=lib/forge-std/src/",
+]
+
+[profile.default.fuzz]
+runs = 256
+
+[profile.ci.fuzz]
+runs = 1000
+
+[rpc_endpoints]
+localhost         = "http://127.0.0.1:8545"
+hedera_testnet    = "${HEDERA_TESTNET_RPC}"
+
+[profile.hedera]
+rpc_url = "https://testnet.hashio.io/api"
+chain_id = 296
+
+# Hedera JSON-RPC Relay testnet: https://testnet.hashio.io/api
+# Chain ID: 296 (Hedera testnet)
+# No Etherscan-compatible block explorer for Hedera — use mirror node for verification:
+#   https://testnet.mirrornode.hedera.com/api/v1/contracts/{address}

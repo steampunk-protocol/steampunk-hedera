@@ -1,0 +1,21 @@
+{
+  "name": "steampunk-hedera-scripts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "setup": "tsx setup-hedera.ts",
+    "register-agents": "tsx register-agents.ts",
+    "deploy": "tsx deploy-contracts.ts"
+  },
+  "dependencies": {
+    "@hashgraph/sdk": "^2.51.0",
+    "@hashgraphonline/standards-sdk": "^0.0.42",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "@types/node": "^22.10.7"
+  }
+}

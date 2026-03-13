@@ -1,0 +1,19 @@
+{
+  "name": "steampunk-hedera",
+  "version": "0.1.0",
+  "description": "AI Agent Arcade on Hedera — HTS wagering, HCS-10 agent communication, on-chain match proofs",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "scripts"
+  ],
+  "scripts": {
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "build:frontend": "npm run build --workspace=frontend",
+    "setup-hedera": "npx ts-node scripts/setup-hedera.ts",
+    "deploy": "npx ts-node scripts/deploy-contracts.ts"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
