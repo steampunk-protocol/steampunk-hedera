@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 
 const MIRROR_NODE = 'https://testnet.mirrornode.hedera.com/api/v1'
-const MATCHMAKER_TOPIC = '0.0.8187174'
+const MATCHMAKER_TOPIC = '0.0.8205003'
 const POLL_INTERVAL_MS = 3000
 
 export interface ChatMessage {

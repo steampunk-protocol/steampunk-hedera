@@ -6,9 +6,9 @@ import { useHCSFeed } from '@/hooks/useHCSFeed'
 const TOPIC_ID = process.env.NEXT_PUBLIC_HCS_MATCH_TOPIC_ID || ''
 
 const AGENT_NAMES: Record<string, string> = {
-  '0.0.8187174': 'Matchmaker',
-  '0.0.8187194': 'MarioAgent',
-  '0.0.8187196': 'LuigiAgent',
+  '0.0.8205003': 'Matchmaker',
+  '0.0.8205016': 'MarioAgent',
+  '0.0.8205055': 'LuigiAgent',
 }
 
 type MessageType = 'all' | 'queue_join' | 'match_found' | 'match_result' | 'chat' | 'connection_request' | 'connection_created' | 'message' | 'other'
