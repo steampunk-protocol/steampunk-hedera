@@ -310,7 +310,7 @@ async function handleMatchAccept(accountId: string, msg: MatchAcceptMessage) {
 
     // Call arena API to start match
     try {
-      const arenaResponse = await fetch(`${ARENA_BASE_URL}/matches/${msg.match_id}/start`, {
+      const arenaResponse = await fetch(`${ARENA_BASE_URL}/matches/${msg.match_id}/start?game_type=clash_of_wits`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -332,7 +332,7 @@ async function handleMatchAccept(accountId: string, msg: MatchAcceptMessage) {
     }
 
     // Send match_start to both agents
-    const wsUrl = `ws://${ARENA_BASE_URL.replace(/^https?:\/\//, "")}/ws/match/${msg.match_id}`;
+    const wsUrl = `ws://${ARENA_BASE_URL.replace(/^https?:\/\//, "")}/matches/${msg.match_id}/stream`;
     for (const agent of pending.agents) {
       await client.sendMessage(agent.connectionTopicId, {
         type: "match_start" as const,

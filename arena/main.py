@@ -164,37 +164,69 @@ async def list_matches(
     ]
 
 
+class MatchStartRequest(BaseModel):
+    match_id: str = ""
+    game: str = ""
+    wager: float = 0
+    agents: list[dict] = []
+
+
 @app.post("/matches/{match_id}/start", tags=["matches"])
 async def start_match(
     match_id: str,
     background_tasks: BackgroundTasks,
     game_type: str = "mariokart64",
+    body: MatchStartRequest | None = None,
 ):
     """
     Start a pending match. Reads agents from DB (created by matchmaking queue).
+    If match doesn't exist in DB (e.g. created by HCS-10 matchmaker), creates it
+    from the request body.
     game_type: "mariokart64" (default) or "clash_of_wits" (RPSLS fallback game).
     """
+    import time as _time
     from sqlalchemy import select
     from arena.db.models import AsyncSessionLocal, MatchModel
     from arena.race_runner import RaceRunner
 
-    # Validate match exists and is in pending status
     async with AsyncSessionLocal() as session:
         stmt = select(MatchModel).where(MatchModel.match_id == match_id)
         result = await session.execute(stmt)
         match = result.scalar_one_or_none()
 
         if not match:
-            raise HTTPException(status_code=404, detail="Match not found")
+            # Auto-create match from body (HCS-10 matchmaker flow)
+            if body and body.agents:
+                agent_addrs = [
+                    (a.get("account_id") or a.get("address") or "").lower()
+                    for a in body.agents
+                ]
+                agent_addrs = [a for a in agent_addrs if a]
+                if len(agent_addrs) < 2:
+                    raise HTTPException(status_code=400, detail="Need at least 2 agents in body")
+                wager_raw = str(int(body.wager * (10 ** 8))) if body.wager else "0"
+                match = MatchModel(
+                    match_id=match_id,
+                    track_id=0,
+                    status="pending",
+                    agent_addresses=",".join(agent_addrs),
+                    wager_amount_wei=wager_raw,
+                    created_at=int(_time.time() * 1000),
+                )
+                session.add(match)
+                await session.flush()
+                logger.info(f"Auto-created match {match_id} from HCS-10 matchmaker: {agent_addrs}")
+            else:
+                raise HTTPException(status_code=404, detail="Match not found")
+
         if match.status != "pending":
             raise HTTPException(
                 status_code=409,
                 detail=f"Match is '{match.status}', expected 'pending'",
             )
 
-        # Atomically set to in_progress to prevent double-starts
         match.status = "in_progress"
-        match.started_at = int(__import__("time").time() * 1000)
+        match.started_at = int(_time.time() * 1000)
         session.add(match)
         await session.commit()
 

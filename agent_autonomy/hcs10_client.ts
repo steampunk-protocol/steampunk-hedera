@@ -125,7 +125,8 @@ export class HCS10AgentClient {
       // Resolve HCS-1 inscribed content if the data is an HRL reference
       let data = msg.data ?? "";
       try {
-        data = await this.sdk.getMessageContent(data);
+        const resolved_content = await this.sdk.getMessageContent(data);
+        data = typeof resolved_content === "string" ? resolved_content : data;
       } catch {
         // If resolution fails, use raw data
       }

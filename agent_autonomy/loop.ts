@@ -507,12 +507,16 @@ async function runAutonomyLoop(agentName: string): Promise<void> {
             // Approve + deposit wager on-chain
             // Use match_id hash as numeric ID (arena uses match_id_to_uint256)
             let txHash = "";
-            try {
-              const numericId = matchIdToUint256(currentMatchId);
-              txHash = await approveAndDepositWager(numericId, wagerAmountRaw, privateKey);
-              console.log(`[${agentConfig.name}] Wager deposited: ${txHash}`);
-            } catch (err) {
-              console.error(`[${agentConfig.name}] Wager deposit failed:`, err);
+            if (!wallet) {
+              console.log(`[${agentConfig.name}] Skipping on-chain wager deposit (ED25519 agent, no EVM wallet)`);
+            } else {
+              try {
+                const numericId = matchIdToUint256(currentMatchId);
+                txHash = await approveAndDepositWager(numericId, wagerAmountRaw, OPERATOR_KEY);
+                console.log(`[${agentConfig.name}] Wager deposited: ${txHash}`);
+              } catch (err) {
+                console.error(`[${agentConfig.name}] Wager deposit failed:`, err);
+              }
             }
 
             state = "matched";
@@ -589,10 +593,29 @@ async function runAutonomyLoop(agentName: string): Promise<void> {
               const numericId = queueResult.numeric_match_id
                 ? BigInt(queueResult.numeric_match_id as string)
                 : matchIdToUint256(currentMatchId);
+              if (!wallet) {
+                console.log(`[${agentConfig.name}] Skipping on-chain wager deposit (ED25519 agent)`);
+              } else {
+                try {
+                  await approveAndDepositWager(numericId, wagerAmountRaw, OPERATOR_KEY);
+                } catch (err) {
+                  console.error(`[${agentConfig.name}] Wager deposit failed:`, err);
+                }
+              }
+
+              // Start the match via REST (queue only creates it as "pending")
               try {
-                await approveAndDepositWager(numericId, wagerAmountRaw, privateKey);
+                const startResp = await fetch(
+                  `${ARENA_BASE_URL}/matches/${currentMatchId}/start?game_type=clash_of_wits`,
+                  { method: "POST" },
+                );
+                if (!startResp.ok) {
+                  console.warn(`[${agentConfig.name}] Match start returned ${startResp.status}`);
+                } else {
+                  console.log(`[${agentConfig.name}] Match started via REST`);
+                }
               } catch (err) {
-                console.error(`[${agentConfig.name}] Wager deposit failed:`, err);
+                console.error(`[${agentConfig.name}] Failed to start match:`, err);
               }
 
               // Play via WS
