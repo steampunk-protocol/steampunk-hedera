@@ -5,6 +5,7 @@ import { useAccount, useWriteContract, useReadContract } from 'wagmi'
 import { formatUnits, parseUnits } from 'viem'
 import type { BettingUpdateMessage, PlayerState } from '@/types/ws'
 import { CONTRACTS, predictionPoolAbi, erc20Abi } from '@/config/wagmi'
+import { matchIdToUint256 } from '@/lib/matchId'
 
 // HTS STEAM token uses 8 decimals
 const STEAM_DECIMALS = 8
@@ -71,13 +72,14 @@ export function BettingPanel({ matchId, bettingState, players }: Props) {
           functionName: 'approve',
           args: [CONTRACTS.predictionPool, amountUnits],
         })
-        // Wait for approval to propagate (~3-5s on Hedera)
-        await new Promise(resolve => setTimeout(resolve, 4000))
+        // wagmi's writeContractAsync waits for tx receipt, so approval is confirmed
+        // Add small buffer for Hedera mirror node propagation
+        await new Promise(resolve => setTimeout(resolve, 1500))
       }
 
-      // Place the bet
+      // Place the bet — hash UUID to uint256 (must match arena/utils.py)
       setTxStatus('betting')
-      const matchIdNum = BigInt(matchId)
+      const matchIdNum = matchIdToUint256(matchId)
       await placeBet({
         address: CONTRACTS.predictionPool,
         abi: predictionPoolAbi,

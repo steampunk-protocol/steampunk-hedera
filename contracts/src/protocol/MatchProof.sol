@@ -9,9 +9,9 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 /**
  * @title MatchProof
- * @notice Game-agnostic dual-signed match result attestation.
+ * @notice Game-agnostic oracle-signed match result attestation.
  * @dev UUPS upgradeable. Stores EIP-712 signed match results.
- *      Agents sign results off-chain; arena submits both signatures.
+ *      Arena oracle signs results; single trusted oracle for MVP.
  *      On Hedera: match results are also published to an HCS topic for
  *      immutable ordering proof (see arena/hcs/ for HCS-10 publishing).
  */
@@ -31,10 +31,13 @@ contract MatchProof is Initializable, EIP712Upgradeable, OwnableUpgradeable, UUP
         "MarioKartResult(address[4] agents,uint8[4] finalPositions,uint32[4] finishTimes,uint8 trackId,uint256 matchId,uint256 timestamp)"
     );
 
+    address public oracle;
+
     mapping(uint256 => MarioKartResult) public results;
     mapping(uint256 => bool) public submitted;
 
     event ResultSubmitted(uint256 indexed matchId, address indexed winner, uint256 timestamp);
+    event OracleUpdated(address indexed oldOracle, address indexed newOracle);
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -44,26 +47,26 @@ contract MatchProof is Initializable, EIP712Upgradeable, OwnableUpgradeable, UUP
     function initialize(address initialOwner) external initializer {
         __EIP712_init("SteamPunk", "1");
         __Ownable_init(initialOwner);
+        oracle = initialOwner;
+    }
+
+    function setOracle(address _oracle) external onlyOwner {
+        emit OracleUpdated(oracle, _oracle);
+        oracle = _oracle;
     }
 
     /**
-     * @notice Submit a dual-signed match result.
+     * @notice Submit an oracle-signed match result (MVP — single trusted oracle).
      * @param result    The MarioKartResult struct.
-     * @param signatures Agent signatures (at least 2, one per competing agent slot).
+     * @param signature Oracle's EIP-712 signature over the result.
      */
-    function submitResult(MarioKartResult calldata result, bytes[] calldata signatures) external {
+    function submitResult(MarioKartResult calldata result, bytes calldata signature) external {
         require(!submitted[result.matchId], "MatchProof: already submitted");
         require(result.matchId > 0, "MatchProof: invalid matchId");
-        require(signatures.length >= 2, "MatchProof: need at least 2 signatures");
 
         bytes32 digest = _hashTypedDataV4(_hashResult(result));
-        uint256 agentCount = _countAgents(result.agents);
-        require(signatures.length <= agentCount, "MatchProof: too many signatures");
-
-        for (uint256 i = 0; i < signatures.length; i++) {
-            address signer = digest.recover(signatures[i]);
-            require(signer == result.agents[i], "MatchProof: invalid signature");
-        }
+        address signer = digest.recover(signature);
+        require(signer == oracle, "MatchProof: invalid oracle signature");
 
         results[result.matchId] = result;
         submitted[result.matchId] = true;

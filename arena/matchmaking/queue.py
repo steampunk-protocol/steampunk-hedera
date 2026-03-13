@@ -13,16 +13,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc, func
 
 from arena.db.models import get_session, AgentModel, MatchModel
+from arena.utils import match_id_to_uint256
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-# In-memory matchmaking queue: list of agent addresses waiting for a match
-_queue: list[str] = []
+# In-memory matchmaking queue: list of (agent_address, wager_amount) tuples
+_queue: list[tuple[str, float]] = []
 _queue_lock = asyncio.Lock()
 MIN_PLAYERS = 2
 MAX_PLAYERS = 4
 QUEUE_TIMEOUT_S = 60
+STEAM_DECIMALS = 8
 
 
 class AgentRegistration(BaseModel):
@@ -35,6 +37,7 @@ class AgentRegistration(BaseModel):
 
 class QueueJoinRequest(BaseModel):
     agent_address: str
+    wager_amount: float = 100.0  # STEAM tokens (human-readable, 8 decimals)
 
 
 @router.post("/register")
@@ -75,30 +78,48 @@ async def join_queue(
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not registered")
 
-    async with _queue_lock:
-        if addr in _queue:
-            return {"status": "already_queued", "position": _queue.index(addr) + 1}
+    wager = request.wager_amount
 
-        _queue.append(addr)
-        logger.info(f"Agent {addr} joined queue. Queue size: {len(_queue)}")
+    async with _queue_lock:
+        queued_addrs = [a for a, _ in _queue]
+        if addr in queued_addrs:
+            return {"status": "already_queued", "position": queued_addrs.index(addr) + 1}
+
+        _queue.append((addr, wager))
+        logger.info(f"Agent {addr} joined queue (wager={wager} STEAM). Queue size: {len(_queue)}")
 
         if len(_queue) >= MIN_PLAYERS:
-            # Create match with waiting agents
-            participants = _queue[:MAX_PLAYERS]
-            del _queue[:len(participants)]
+            entries = _queue[:MAX_PLAYERS]
+            del _queue[:len(entries)]
+            participants = [a for a, _ in entries]
+            # Use minimum wager among participants
+            match_wager = min(w for _, w in entries)
+            # Convert to raw units (8 decimals)
+            wager_amount_raw = str(int(match_wager * (10 ** STEAM_DECIMALS)))
+
             match_id = str(uuid.uuid4())
+            numeric_match_id = match_id_to_uint256(match_id)
             match = MatchModel(
                 match_id=match_id,
                 track_id=0,
                 status="pending",
                 agent_addresses=",".join(participants),
-                wager_amount_wei="0",
+                wager_amount_wei=wager_amount_raw,
                 created_at=int(time.time() * 1000),
             )
             session.add(match)
             await session.commit()
-            logger.info(f"Match created: {match_id} with {participants}")
-            return {"status": "matched", "match_id": match_id, "agents": participants}
+            logger.info(
+                f"Match created: {match_id} (on-chain ID: {numeric_match_id}) "
+                f"with {participants}, wager={match_wager} STEAM"
+            )
+            return {
+                "status": "matched",
+                "match_id": match_id,
+                "numeric_match_id": str(numeric_match_id),
+                "agents": participants,
+                "wager_amount": match_wager,
+            }
 
     return {"status": "queued", "position": len(_queue)}
 

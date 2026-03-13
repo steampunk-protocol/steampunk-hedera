@@ -46,31 +46,72 @@ async def health():
     return {"status": "ok", "service": "steampunk-arena-hedera"}
 
 
+@app.get("/matches", tags=["matches"])
+async def list_matches(
+    status: str = "",
+    limit: int = 50,
+):
+    """List matches, optionally filtered by status."""
+    from sqlalchemy import select, desc
+    from arena.db.models import AsyncSessionLocal, MatchModel
+
+    async with AsyncSessionLocal() as session:
+        stmt = select(MatchModel).order_by(desc(MatchModel.created_at)).limit(limit)
+        if status:
+            stmt = stmt.where(MatchModel.status == status)
+        result = await session.execute(stmt)
+        matches = result.scalars().all()
+
+    return [
+        {
+            "match_id": m.match_id,
+            "status": m.status,
+            "agents": m.agent_addresses.split(","),
+            "track_id": m.track_id,
+            "wager_amount_wei": m.wager_amount_wei,
+            "created_at": m.created_at,
+            "started_at": m.started_at,
+            "ended_at": m.ended_at,
+            "winner": m.winner_address,
+            "hcs_message_id": m.hcs_message_id,
+        }
+        for m in matches
+    ]
+
+
 @app.post("/matches/{match_id}/start", tags=["matches"])
-async def start_match(match_id: str, background_tasks: BackgroundTasks, agents: str = ""):
+async def start_match(match_id: str, background_tasks: BackgroundTasks):
     """
-    Start a match in the background.
-
-    Query params:
-        agents: comma-separated list of agent wallet addresses (2-4)
-
-    Example:
-        POST /matches/match-001/start?agents=0xABC...,0xDEF...
+    Start a pending match. Reads agents from DB (created by matchmaking queue).
     """
+    from sqlalchemy import select
+    from arena.db.models import AsyncSessionLocal, MatchModel
     from arena.race_runner import RaceRunner
 
-    agent_list = [a.strip().lower() for a in agents.split(",") if a.strip()] if agents else []
+    # Validate match exists and is in pending status
+    async with AsyncSessionLocal() as session:
+        stmt = select(MatchModel).where(MatchModel.match_id == match_id)
+        result = await session.execute(stmt)
+        match = result.scalar_one_or_none()
+
+        if not match:
+            raise HTTPException(status_code=404, detail="Match not found")
+        if match.status != "pending":
+            raise HTTPException(
+                status_code=409,
+                detail=f"Match is '{match.status}', expected 'pending'",
+            )
+
+        # Atomically set to in_progress to prevent double-starts
+        match.status = "in_progress"
+        match.started_at = int(__import__("time").time() * 1000)
+        session.add(match)
+        await session.commit()
+
+        agent_list = [a.strip().lower() for a in match.agent_addresses.split(",") if a.strip()]
 
     if len(agent_list) < 2:
-        raise HTTPException(
-            status_code=400,
-            detail="At least 2 agent addresses required (comma-separated 'agents' query param)",
-        )
-    if len(agent_list) > 4:
-        raise HTTPException(
-            status_code=400,
-            detail="Maximum 4 agents supported",
-        )
+        raise HTTPException(status_code=400, detail="Match has fewer than 2 agents")
 
     runner = RaceRunner(match_id=match_id, agents=agent_list)
 
