@@ -28,10 +28,12 @@ contracts/cache/
 contracts/broadcast/
 contracts/lib/
 
-# Environment
+# Environment & secrets
 .env
 .env.local
 .env.*.local
+scripts/agent-ids.json
+scripts/hedera-ids.json
 
 # OS
 .DS_Store
