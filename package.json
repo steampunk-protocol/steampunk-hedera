@@ -5,7 +5,8 @@
   "private": true,
   "workspaces": [
     "frontend",
-    "scripts"
+    "scripts",
+    "agent_autonomy"
   ],
   "scripts": {
     "dev:frontend": "npm run dev --workspace=frontend",

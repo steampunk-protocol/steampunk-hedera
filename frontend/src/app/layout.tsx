@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import { Web3Provider } from '@/providers/Web3Provider'
 import { ConnectWallet } from '@/components/ConnectWallet'
+import { ChatPanel } from '@/components/chat/ChatPanel'
 import Link from 'next/link'
 
 export const metadata: Metadata = {
@@ -69,6 +70,15 @@ export default function RootLayout({
               }}>
                 Leaderboard
               </Link>
+              <Link href="/chat" style={{
+                color: '#b5a642',
+                textDecoration: 'none',
+                fontSize: '12px',
+                fontFamily: '"Space Mono", monospace',
+                transition: 'color 0.2s',
+              }}>
+                &#x2699; Chat
+              </Link>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
               <span style={{
@@ -83,6 +93,7 @@ export default function RootLayout({
             </div>
           </nav>
           {children}
+          <ChatPanel asPanel={true} defaultCollapsed={true} />
         </Web3Provider>
       </body>
     </html>

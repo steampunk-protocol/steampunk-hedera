@@ -12,6 +12,7 @@ logging.basicConfig(
 
 from fastapi import FastAPI, BackgroundTasks, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 from arena.db.models import init_db
 from arena.matchmaking.queue import router as matchmaking_router
@@ -39,6 +40,65 @@ app.add_middleware(
 app.include_router(matchmaking_router, prefix="/agents", tags=["agents"])
 app.include_router(ws_router, prefix="/matches", tags=["matches"])
 app.include_router(emulator_router, tags=["emulator"])
+
+
+class ChatSendRequest(BaseModel):
+    topic_id: str
+    message: str
+    sender: str = "spectator"
+
+
+@app.post("/chat/send", tags=["chat"])
+async def chat_send(req: ChatSendRequest):
+    """
+    Send a chat message to a matchmaker agent via HCS.
+    The arena server holds the operator key required to submit HCS messages.
+    """
+    import json
+    import time as _time
+    from arena.hcs.publisher import publish_match_result
+
+    hcs_message = json.dumps({
+        "type": "chat_user",
+        "data": req.message,
+        "sender": req.sender,
+        "timestamp": int(_time.time() * 1000),
+    })
+
+    # Reuse the HCS publisher — it submits any JSON message to a topic
+    # We call the JS publisher directly since publish_match_result constructs its own payload
+    import asyncio
+    import os
+    from pathlib import Path
+
+    publisher_js = Path(__file__).parent / "hcs" / "hcs-publisher.js"
+
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            "node",
+            str(publisher_js),
+            req.topic_id,
+            hcs_message,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+            env={**os.environ},
+        )
+        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=30.0)
+
+        if proc.returncode != 0:
+            logger.error(f"Chat HCS publish failed: {stderr.decode()}")
+            raise HTTPException(status_code=502, detail="Failed to publish to HCS")
+
+        result = json.loads(stdout.decode().strip())
+        return {
+            "status": "sent",
+            "sequence_number": result.get("sequenceNumber"),
+            "topic_id": req.topic_id,
+        }
+    except asyncio.TimeoutError:
+        raise HTTPException(status_code=504, detail="HCS publish timed out")
+    except FileNotFoundError:
+        raise HTTPException(status_code=503, detail="Node.js not available for HCS publishing")
 
 
 @app.get("/health")
@@ -80,9 +140,14 @@ async def list_matches(
 
 
 @app.post("/matches/{match_id}/start", tags=["matches"])
-async def start_match(match_id: str, background_tasks: BackgroundTasks):
+async def start_match(
+    match_id: str,
+    background_tasks: BackgroundTasks,
+    game_type: str = "mariokart64",
+):
     """
     Start a pending match. Reads agents from DB (created by matchmaking queue).
+    game_type: "mariokart64" (default) or "clash_of_wits" (RPSLS fallback game).
     """
     from sqlalchemy import select
     from arena.db.models import AsyncSessionLocal, MatchModel
@@ -113,7 +178,14 @@ async def start_match(match_id: str, background_tasks: BackgroundTasks):
     if len(agent_list) < 2:
         raise HTTPException(status_code=400, detail="Match has fewer than 2 agents")
 
-    runner = RaceRunner(match_id=match_id, agents=agent_list)
+    # Select game adapter based on game_type
+    adapter = None
+    if game_type == "clash_of_wits":
+        from arena.adapters.strategy_game import StrategyGameAdapter
+        adapter = StrategyGameAdapter()
+        _active_strategy_adapters[match_id] = adapter
+
+    runner = RaceRunner(match_id=match_id, agents=agent_list, adapter=adapter)
 
     async def _run():
         try:
@@ -121,7 +193,33 @@ async def start_match(match_id: str, background_tasks: BackgroundTasks):
             logger.info(f"Match {match_id} completed: {result}")
         except Exception as exc:
             logger.error(f"Match {match_id} failed: {exc}")
+        finally:
+            _active_strategy_adapters.pop(match_id, None)
 
     background_tasks.add_task(_run)
 
-    return {"status": "starting", "match_id": match_id, "agents": agent_list}
+    return {"status": "starting", "match_id": match_id, "agents": agent_list, "game_type": game_type}
+
+
+# Track active strategy game adapters so agents can submit moves
+_active_strategy_adapters: dict = {}
+
+
+@app.post("/matches/{match_id}/action", tags=["matches"])
+async def submit_action(match_id: str, agent_id: str, action: str):
+    """
+    Submit a move for a Clash of Wits match.
+    agent_id: agent wallet address.
+    action: one of rock, paper, scissors, lizard, spock.
+    """
+    adapter = _active_strategy_adapters.get(match_id)
+    if adapter is None:
+        raise HTTPException(
+            status_code=404,
+            detail="No active strategy game found for this match. Is it a clash_of_wits game?",
+        )
+    try:
+        result = await adapter.submit_action(match_id, agent_id.lower(), action)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))

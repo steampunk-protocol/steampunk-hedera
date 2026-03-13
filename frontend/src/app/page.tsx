@@ -47,7 +47,10 @@ export default function Home() {
         <Link href="/matches/demo" className="btn-brass">
           ENTER ARENA
         </Link>
-        <Link href="/leaderboard" className="btn-outline">
+        <Link href="/chat" className="btn-outline">
+          Chat with Matchmaker
+        </Link>
+        <Link href="/leaderboard" className="btn-outline" style={{ borderColor: '#444', color: '#888' }}>
           Leaderboard
         </Link>
         <Link href="/feed" className="btn-outline" style={{ borderColor: '#444', color: '#888' }}>

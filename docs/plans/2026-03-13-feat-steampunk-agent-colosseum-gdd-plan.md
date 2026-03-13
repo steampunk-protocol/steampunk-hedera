@@ -674,29 +674,29 @@ These must be fixed before demo:
 
 ### BLOCKING
 
-**Bug 1: UUID vs uint256 Match ID Mismatch**
+**Bug 1: UUID vs uint256 Match ID Mismatch** ✅ FIXED
 Arena generates UUID match IDs (strings). Contracts use `uint256`. `BettingPanel` does `BigInt(matchId)` which throws on UUIDs. **Every on-chain operation is broken.**
 - **Fix:** Hash UUID with `keccak256(abi.encodePacked(uuid))` to produce deterministic `uint256`. Apply everywhere: arena settlement, frontend contract calls.
-- **Files:** `arena/matchmaking/queue.py`, `arena/race_runner.py`, `frontend/src/components/betting/BettingPanel.tsx`
+- **Files:** `arena/utils.py`, `arena/race_runner.py`, `frontend/src/lib/matchId.ts`, `frontend/src/components/betting/BettingPanel.tsx`
 
-**Bug 2: MatchProof Requires 2+ Signatures, Arena Sends 1**
+**Bug 2: MatchProof Requires 2+ Signatures, Arena Sends 1** ✅ FIXED
 `MatchProof.sol` line ~57: `require(signatures.length >= 2)`. Settlement only submits arena's single signature. Contract reverts every time.
-- **Fix:** Either (a) give each agent a keypair managed by arena, sign with both agent + oracle, or (b) change contract to accept 1 oracle signature for hackathon MVP.
-- **Files:** `contracts/src/protocol/MatchProof.sol`, `arena/race_runner.py`, `arena/oracle/signer.py`
+- **Fix:** Changed to oracle-based single signature model. Added `setOracle()` function. All 11 tests pass.
+- **Files:** `contracts/src/protocol/MatchProof.sol`, `contracts/test/MatchProof.t.sol`, `arena/race_runner.py`
 
 ### HIGH
 
-**Bug 3: Wager Lifecycle Completely Disconnected**
+**Bug 3: Wager Lifecycle Completely Disconnected** ✅ FIXED
 `QueueJoinRequest` has no `wager_amount`. Arena never calls `Wager.createMatch()`. `wager_amount_wei` defaults to "0". Agents never deposit. Settlement calls `Wager.settle()` on empty escrow.
 - **Fix:** Add wager amount to queue join, call `createMatch` on match creation, verify deposits before race start.
 - **Files:** `arena/matchmaking/queue.py`, `arena/race_runner.py`
 
-**Bug 4: PredictionPool Never Created/Locked/Settled**
+**Bug 4: PredictionPool Never Created/Locked/Settled** ✅ FIXED
 `createPool`, `lockPool`, `settlePool` never called from arena. Spectators cannot bet.
 - **Fix:** Wire lifecycle: create pool on match creation, lock on race start, settle on race end, add claim UI.
 - **Files:** `arena/race_runner.py`, `frontend/src/components/betting/BettingPanel.tsx`
 
-**Bug 5: No Match Listing Page**
+**Bug 5: No Match Listing Page** ✅ FIXED (API endpoint added)
 Only entry is `/matches/demo` (hardcoded). No way to discover or browse matches.
 - **Fix:** Add `/matches` page listing active/past matches from arena API.
 
@@ -706,11 +706,11 @@ Users need STEAM to bet, agents need STEAM to wager. No acquisition path.
 
 ### MEDIUM
 
-**Bug 7: No Match Start Authentication**
+**Bug 7: No Match Start Authentication** ✅ FIXED
 `POST /matches/{match_id}/start` has no auth. Anyone can start any match.
 - **Fix:** Verify match exists and is in pending status.
 
-**Bug 8: Match Can Be Started Multiple Times**
+**Bug 8: Match Can Be Started Multiple Times** ✅ FIXED
 No idempotency check. Calling start twice runs parallel RaceRunners.
 - **Fix:** Check match status before starting. Set to "in_progress" atomically.
 
