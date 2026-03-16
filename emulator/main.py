@@ -35,11 +35,13 @@ from emulator.ws.internal_schema import (
     EmulatorPlayerState,
     ArenaStartMatchCommand,
     ArenaStopMatchCommand,
+    ArenaStrategyUpdateCommand,
 )
 from emulator.envs.mariokart64_multi import MarioKart64MultiAgentEnv
 from emulator.envs.mariokart64_retro import RETRO_AVAILABLE as GYM_AVAILABLE
-from emulator.agents.base import Observation, Action, AgentMetadata
+from emulator.agents.base import GameAgent, Observation, Action, AgentMetadata
 from emulator.agents.rule_based import RuleBasedAgent
+from emulator.agents.strategy_controller import apply_strategy
 
 logging.basicConfig(
     level=logging.INFO,
@@ -66,6 +68,11 @@ class EmulatorService:
         self.env: MarioKart64MultiAgentEnv | None = None
         self._running = False
         self._match_id: str = ""
+        self._ws = None
+        # Agent lookup by wallet address — populated during _run_match
+        self._agents: dict[str, GameAgent] = {}
+        # Queue for WS messages received during a match (strategy updates, stop)
+        self._incoming_queue: asyncio.Queue = asyncio.Queue()
 
     async def run(self):
         """Main loop: connect to arena, handle commands."""
@@ -81,12 +88,12 @@ class EmulatorService:
 
     async def _connect_and_serve(self):
         """Single connection lifecycle."""
-        # Connect to arena's internal emulator endpoint
         uri = f"{ARENA_WS_URL}/emulator/ws"
         logger.info(f"Connecting to arena at {uri}...")
 
         async with websockets.connect(uri) as ws:
             logger.info("Connected to arena")
+            self._ws = ws
 
             # Announce readiness
             ready = EmulatorReadyMessage(
@@ -97,24 +104,63 @@ class EmulatorService:
             await ws.send(ready.to_json())
             logger.info(f"Sent ready message: {self.emulator_id}")
 
-            # Command loop
+            # Read all WS messages into a queue. A separate task (_run_match)
+            # consumes strategy_update/stop messages during a race.
             async for raw in ws:
-                await self._handle_message(ws, raw)
+                import json as _json
+                data = _json.loads(raw)
+                msg_type = data.get("type", "")
 
-    async def _handle_message(self, ws, raw: str):
-        """Dispatch incoming arena command."""
-        import json
-        data = json.loads(raw)
-        msg_type = data.get("type", "")
+                if msg_type == "start_match" and not self._running:
+                    cmd = ArenaStartMatchCommand.from_json(raw)
+                    # Run match as a concurrent task so WS reader continues
+                    self._match_task = asyncio.create_task(self._run_match(ws, cmd))
+                elif self._running:
+                    # During match: queue for the race loop to drain
+                    await self._incoming_queue.put(raw)
+                elif msg_type == "stop_match":
+                    logger.info(f"Stop match command (no active match)")
+                elif msg_type == "strategy_update":
+                    logger.info("Strategy update received but no active match")
+                else:
+                    logger.warning(f"Unknown message type: {msg_type}")
 
-        if msg_type == "start_match":
-            cmd = ArenaStartMatchCommand.from_json(raw)
-            await self._run_match(ws, cmd)
-        elif msg_type == "stop_match":
-            logger.info(f"Stop match command received: {data.get('match_id')}")
-            self._running = False
-        else:
-            logger.warning(f"Unknown message type: {msg_type}")
+    def _handle_strategy_update(self, raw: str):
+        """Apply an external agent's strategy update to the running agent."""
+        cmd = ArenaStrategyUpdateCommand.from_json(raw)
+        agent = self._agents.get(cmd.agent_id)
+        if agent is None:
+            logger.warning(f"Strategy update for unknown agent {cmd.agent_id}")
+            return
+        applied = apply_strategy(
+            agent,
+            strategy=cmd.strategy,
+            target=cmd.target,
+            item_policy=cmd.item_policy,
+        )
+        if applied:
+            logger.info(
+                f"Strategy applied for {cmd.agent_id}: {cmd.strategy} "
+                f"(reason: {cmd.reasoning[:80]})"
+            )
+
+    def _drain_incoming_queue(self):
+        """Process all queued WS messages (strategy updates, stop commands)."""
+        import json as _json
+        while not self._incoming_queue.empty():
+            try:
+                raw = self._incoming_queue.get_nowait()
+                data = _json.loads(raw)
+                msg_type = data.get("type", "")
+                if msg_type == "stop_match":
+                    logger.info("Stop command received during match")
+                    self._running = False
+                elif msg_type == "strategy_update":
+                    self._handle_strategy_update(raw)
+                else:
+                    logger.warning(f"Unexpected message during match: {msg_type}")
+            except Exception:
+                break
 
     async def _run_match(self, ws, cmd: ArenaStartMatchCommand):
         """
@@ -134,7 +180,6 @@ class EmulatorService:
             )
 
             # Create rule-based agents for each slot
-            # In future: arena will specify agent type per slot
             agents = []
             for i, addr in enumerate(cmd.agents):
                 agent = RuleBasedAgent(
@@ -143,6 +188,7 @@ class EmulatorService:
                     agent_wallet=addr,
                 )
                 agents.append((addr, agent))
+                self._agents[addr] = agent
 
             self.env.register_agents(agents)
 
@@ -156,6 +202,9 @@ class EmulatorService:
 
             while self._running:
                 tick += 1
+
+                # Process any queued strategy updates or stop commands
+                self._drain_incoming_queue()
 
                 # Collect actions from all agents
                 actions = {}
@@ -221,6 +270,7 @@ class EmulatorService:
             if self.env:
                 self.env.close()
                 self.env = None
+            self._agents.clear()
             self._running = False
 
 

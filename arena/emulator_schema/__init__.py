@@ -102,3 +102,21 @@ class ArenaStopMatchCommand:
     @classmethod
     def from_json(cls, raw: str) -> "ArenaStopMatchCommand":
         return cls(**json.loads(raw))
+
+
+@dataclass
+class ArenaStrategyUpdateCommand:
+    type: str = "strategy_update"
+    match_id: str = ""
+    agent_id: str = ""
+    strategy: str = "balanced"
+    target: str = "none"
+    item_policy: str = "immediate"
+    reasoning: str = ""
+
+    def to_json(self) -> str:
+        return json.dumps(asdict(self))
+
+    @classmethod
+    def from_json(cls, raw: str) -> "ArenaStrategyUpdateCommand":
+        return cls(**json.loads(raw))

@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  arena:
+    build:
+      context: .
+      dockerfile: arena/Dockerfile
+    ports:
+      - "8001:8000"
+    env_file: .env
+    volumes:
+      - arena-data:/srv/data
+    networks:
+      - steampunk
+    restart: unless-stopped
+
+  emulator:
+    build:
+      context: .
+      dockerfile: emulator/Dockerfile
+    environment:
+      - ARENA_WS_URL=ws://arena:8000
+      - EMULATOR_ID=emu-001
+      - DISPLAY=:99
+      - LIBGL_ALWAYS_SOFTWARE=1
+      - GALLIUM_DRIVER=llvmpipe
+    depends_on:
+      - arena
+    volumes:
+      # Mount ROM directory — place mario_kart_64.z64 in ./roms/
+      - ./roms:/opt/roms:ro
+    networks:
+      - steampunk
+    restart: unless-stopped
+
+volumes:
+  arena-data:
+
+networks:
+  steampunk:
+    driver: bridge

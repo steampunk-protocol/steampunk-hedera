@@ -261,6 +261,10 @@ async def start_match(
 # Track active strategy game adapters so agents can submit moves
 _active_strategy_adapters: dict = {}
 
+# Rate limiting for strategy updates: agent_id -> last_update_timestamp
+_strategy_rate_limits: dict[str, float] = {}
+STRATEGY_RATE_LIMIT_S = 5.0  # 1 update per 5 seconds per agent
+
 
 @app.post("/matches/{match_id}/action", tags=["matches"])
 async def submit_action(match_id: str, agent_id: str, action: str):
@@ -280,3 +284,127 @@ async def submit_action(match_id: str, agent_id: str, action: str):
         return result
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+class StrategyRequest(BaseModel):
+    agent_id: str
+    strategy: str = "balanced"      # aggressive | defensive | balanced | item_focus
+    target: str = "none"            # leader | nearest | none
+    item_policy: str = "immediate"  # immediate | save_for_straight | save_for_opponent
+    reasoning: str = ""
+
+
+@app.post("/matches/{match_id}/strategy", tags=["matches"])
+async def set_strategy(match_id: str, req: StrategyRequest):
+    """
+    Set game strategy for an external agent during an MK64 match.
+    Rate-limited to 1 update per 5 seconds per agent.
+    The strategy is forwarded to the emulator which adjusts the agent's
+    RuleBasedAgent parameters accordingly.
+    """
+    import time as _time
+    from arena.ws.emulator_bridge import emulator_registry
+
+    agent_id = req.agent_id.lower()
+
+    # Rate limiting
+    now = _time.time()
+    last_update = _strategy_rate_limits.get(agent_id, 0.0)
+    wait_s = STRATEGY_RATE_LIMIT_S - (now - last_update)
+    if wait_s > 0:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Rate limited. Next strategy update allowed in {wait_s:.1f}s",
+        )
+
+    # Find the emulator running this match
+    emu = await emulator_registry.get_by_match(match_id)
+    if emu is None:
+        raise HTTPException(
+            status_code=404,
+            detail="No active emulator found for this match",
+        )
+
+    # Validate strategy value
+    valid_strategies = {"aggressive", "defensive", "balanced", "item_focus"}
+    strategy = req.strategy if req.strategy in valid_strategies else "balanced"
+
+    # Forward to emulator
+    await emu.send_strategy_update(
+        match_id=match_id,
+        agent_id=agent_id,
+        strategy=strategy,
+        target=req.target,
+        item_policy=req.item_policy,
+        reasoning=req.reasoning,
+    )
+
+    _strategy_rate_limits[agent_id] = now
+
+    # Return current game state from last tick
+    state = _get_agent_state_from_tick(emu, agent_id)
+    return {
+        "status": "strategy_accepted",
+        "strategy": strategy,
+        "next_strategy_window_ms": int(STRATEGY_RATE_LIMIT_S * 1000),
+        **state,
+    }
+
+
+@app.get("/matches/{match_id}/state", tags=["matches"])
+async def get_match_state(match_id: str):
+    """
+    Get current game state for a running MK64 match.
+    External agents poll this to make strategy decisions.
+    """
+    from arena.ws.emulator_bridge import emulator_registry
+
+    emu = await emulator_registry.get_by_match(match_id)
+    if emu is None:
+        raise HTTPException(
+            status_code=404,
+            detail="No active emulator found for this match",
+        )
+
+    tick = emu._last_tick
+    if tick is None:
+        return {"match_id": match_id, "race_status": "waiting", "players": []}
+
+    players = []
+    for p in tick.players:
+        players.append({
+            "agent_id": p.agent_id,
+            "position": p.position,
+            "lap": p.lap,
+            "total_laps": p.total_laps,
+            "speed": p.speed,
+            "item": p.item,
+            "x": p.x,
+            "y": p.y,
+            "finished": p.finished,
+            "finish_time_ms": p.finish_time_ms,
+        })
+
+    return {
+        "match_id": match_id,
+        "tick": tick.tick,
+        "race_status": tick.race_status,
+        "players": players,
+        "timestamp_ms": tick.timestamp_ms,
+    }
+
+
+def _get_agent_state_from_tick(emu, agent_id: str) -> dict:
+    """Extract a single agent's state from the emulator's last tick."""
+    tick = emu._last_tick
+    if tick is None:
+        return {}
+    for p in tick.players:
+        if p.agent_id == agent_id:
+            return {
+                "current_lap": p.lap,
+                "position": p.position,
+                "speed": p.speed,
+                "item": p.item,
+            }
+    return {}

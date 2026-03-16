@@ -22,6 +22,7 @@ from arena.emulator_schema import (
     EmulatorRaceEndMessage,
     ArenaStartMatchCommand,
     ArenaStopMatchCommand,
+    ArenaStrategyUpdateCommand,
 )
 from arena.ws.broadcaster import manager
 from arena.ws.schema import (
@@ -44,6 +45,8 @@ class EmulatorConnection:
         # Race completion signaling — set by _handle_race_end, awaited by RaceRunner
         self._race_completed = asyncio.Event()
         self._race_result: Optional[dict] = None
+        # Cached last tick for game state polling
+        self._last_tick: Optional[EmulatorTickMessage] = None
 
     async def send_start_match(
         self, match_id: str, agents: list[str], track_id: int = 0, total_laps: int = 3,
@@ -64,6 +67,27 @@ class EmulatorConnection:
         cmd = ArenaStopMatchCommand(match_id=match_id)
         await self.ws.send_text(cmd.to_json())
         self.current_match_id = None
+
+    async def send_strategy_update(
+        self,
+        match_id: str,
+        agent_id: str,
+        strategy: str,
+        target: str = "none",
+        item_policy: str = "immediate",
+        reasoning: str = "",
+    ):
+        """Forward an external agent's strategy command to the emulator."""
+        cmd = ArenaStrategyUpdateCommand(
+            match_id=match_id,
+            agent_id=agent_id,
+            strategy=strategy,
+            target=target,
+            item_policy=item_policy,
+            reasoning=reasoning,
+        )
+        await self.ws.send_text(cmd.to_json())
+        logger.info(f"Sent strategy_update to {self.emulator_id}: {agent_id} -> {strategy}")
 
     async def wait_for_race_end(self, timeout: float = 300.0) -> dict:
         """Block until the emulator sends race_end. Returns the raw result dict."""
@@ -181,6 +205,7 @@ async def emulator_ws(websocket: WebSocket):
 async def _handle_tick(conn: EmulatorConnection, raw: str):
     """Forward emulator tick to public WS as RaceTickMessage."""
     tick = EmulatorTickMessage.from_json(raw)
+    conn._last_tick = tick
     match_id = tick.match_id
 
     players = [

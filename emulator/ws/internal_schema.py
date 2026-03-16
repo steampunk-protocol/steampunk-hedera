@@ -136,3 +136,26 @@ class ArenaStopMatchCommand:
     @classmethod
     def from_json(cls, raw: str) -> "ArenaStopMatchCommand":
         return cls(**json.loads(raw))
+
+
+@dataclass
+class ArenaStrategyUpdateCommand:
+    """
+    Arena forwards an external agent's strategy update to the emulator.
+    Emulator applies this to the running agent's RuleBasedAgent params.
+    type: "strategy_update"
+    """
+    type: str = "strategy_update"
+    match_id: str = ""
+    agent_id: str = ""                         # wallet address of the agent
+    strategy: str = "balanced"                 # aggressive | defensive | balanced | item_focus
+    target: str = "none"                       # leader | nearest | none
+    item_policy: str = "immediate"             # immediate | save_for_straight | save_for_opponent
+    reasoning: str = ""                        # LLM reasoning text (published to HCS)
+
+    def to_json(self) -> str:
+        return json.dumps(asdict(self))
+
+    @classmethod
+    def from_json(cls, raw: str) -> "ArenaStrategyUpdateCommand":
+        return cls(**json.loads(raw))
