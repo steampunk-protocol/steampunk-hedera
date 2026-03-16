@@ -21,9 +21,12 @@ from emulator.agents.base import Observation
 logger = logging.getLogger(__name__)
 
 # stable-retro optional import — module still loadable without it (stub mode)
+# Force stub mode via EMULATOR_STUB_MODE=1 env var when RAM addresses are unverified
 try:
     import retro
-    RETRO_AVAILABLE = True
+    RETRO_AVAILABLE = not os.environ.get("EMULATOR_STUB_MODE", "").strip() in ("1", "true", "yes")
+    if not RETRO_AVAILABLE:
+        logger.info("EMULATOR_STUB_MODE=1 — running in stub mode (no real N64 emulation)")
 except ImportError:
     RETRO_AVAILABLE = False
     logger.warning("stable-retro not installed — MarioKart64RetroEnv will run in stub mode")
@@ -77,10 +80,40 @@ class MarioKart64RetroEnv:
             self._env.close()
 
         try:
+            # Use RAM obs mode to avoid GPU framebuffer requirement.
+            # N64 parallel_n64 core defaults to HW rendering which fails
+            # in headless Docker without GPU. RAM mode gives us full 8MB
+            # RDRAM access for game state reads.
             self._env = retro.make(
                 game=GAME_NAME,
-                render_mode=self.render_mode,
+                state=retro.State.NONE,
+                obs_type=retro.Observations.RAM,
             )
+            # Monkey-patch render() to no-op — parallel_n64 can't provide
+            # a CPU framebuffer without angrylion renderer, and we only
+            # need RAM reads for game state, not pixel observations.
+            self._env.render = lambda *a, **kw: None
+            self._env.get_screen = lambda *a, **kw: np.zeros(
+                (240, 320, 3), dtype=np.uint8
+            )
+            logger.info("Using RAM-only mode (no pixel capture)")
+        except RuntimeError as e:
+            if "multiple emulator instances" in str(e).lower():
+                # N64 core only supports one instance per process.
+                # Additional players fall back to stub mode.
+                logger.warning(
+                    f"Cannot create second N64 instance (player_index={self.player_index}) "
+                    "— falling back to stub mode for this player"
+                )
+                self._step_count = 0
+                self._start_step = 0
+                return self._stub_observation()
+            logger.error(f"retro.make({GAME_NAME!r}) failed: {e}")
+            raise RuntimeError(
+                f"Failed to create stable-retro env for {GAME_NAME}. "
+                "Ensure ROM is imported: python -m retro.import "
+                "emulator/envs/data/MarioKart64-N64 /path/to/mario_kart_64.z64"
+            ) from e
         except Exception as e:
             logger.error(f"retro.make({GAME_NAME!r}) failed: {e}")
             raise RuntimeError(
