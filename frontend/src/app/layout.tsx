@@ -43,7 +43,7 @@ export default function RootLayout({
               }}>
                 STEAM ARCADE
               </Link>
-              <Link href="/matches/demo" style={{
+              <Link href="/arena" style={{
                 color: '#888',
                 textDecoration: 'none',
                 fontSize: '12px',
