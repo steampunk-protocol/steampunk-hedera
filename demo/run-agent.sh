@@ -171,7 +171,7 @@ else:
   fi
 
   echo -e "${C}[${AGENT_NAME}] ${MY_POS:-?}${NC}"
-  echo -e "  ${Y}→ Strategy: ${STRAT^^}${NC} — \"${REASON}\""
+  echo -e "  ${Y}→ Strategy: $(echo $STRAT | tr 'a-z' 'A-Z')${NC} — \"${REASON}\""
 
   # Send strategy
   RESULT=$(curl -sf -X POST "$ARENA/matches/$MATCH_ID/strategy" \
