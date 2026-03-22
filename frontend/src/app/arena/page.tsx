@@ -124,7 +124,7 @@ export default function ArenaPage() {
   const pendingMatches = matches.filter(m => m.status === 'pending')
   const recentMatches = matches.filter(m => m.status === 'settled' || m.status === 'finished').slice(0, 8)
 
-  const shortAddr = (addr: string) => addr.slice(0, 6) + '\u2026' + addr.slice(-4)
+  const shortAddr = (addr: string) => addr.slice(0, 6) + '…' + addr.slice(-4)
   const agentName = (addr: string) => {
     const a = agents.find(ag => ag.address === addr)
     return a?.name || shortAddr(addr)
@@ -193,7 +193,7 @@ export default function ArenaPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {/* Live matches */}
           <section>
-            <SectionHeader icon="\u25CF" iconColor={COLORS.green} title="LIVE MATCHES" />
+            <SectionHeader icon="●" iconColor={COLORS.green} title="LIVE MATCHES" />
             {liveMatches.length === 0 ? (
               <div className="panel" style={{ textAlign: 'center', padding: '32px', color: COLORS.textDim }}>
                 <div style={{ fontSize: '20px', marginBottom: '8px' }}>&#x2699;</div>
@@ -216,7 +216,7 @@ export default function ArenaPage() {
           {/* Pending matches */}
           {pendingMatches.length > 0 && (
             <section>
-              <SectionHeader icon="\u25D0" iconColor={COLORS.blue} title="PENDING" />
+              <SectionHeader icon="◐" iconColor={COLORS.blue} title="PENDING" />
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {pendingMatches.map(m => (
                   <PendingMatchCard
@@ -232,7 +232,7 @@ export default function ArenaPage() {
 
           {/* Recent results */}
           <section>
-            <SectionHeader icon="\u25C6" iconColor={COLORS.agents[0]} title="RECENT RESULTS" />
+            <SectionHeader icon="◆" iconColor={COLORS.agents[0]} title="RECENT RESULTS" />
             {recentMatches.length === 0 ? (
               <div className="panel" style={{ textAlign: 'center', padding: '24px', color: COLORS.textDim, fontSize: '12px' }}>
                 No completed matches yet
@@ -254,7 +254,7 @@ export default function ArenaPage() {
 
         {/* Right sidebar: leaderboard */}
         <div>
-          <SectionHeader icon="\u25B2" iconColor={COLORS.primary} title="TOP AGENTS" />
+          <SectionHeader icon="▲" iconColor={COLORS.primary} title="TOP AGENTS" />
           <div className="panel" style={{ padding: '0' }}>
             {loading ? (
               <div style={{ padding: '24px', textAlign: 'center', color: COLORS.textDim, fontSize: '12px' }}>
@@ -380,7 +380,7 @@ function LiveMatchCard({
         </div>
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontSize: '11px', color: COLORS.green }}>
-            {match.started_at ? timeSince(match.started_at) : '\u2014'}
+            {match.started_at ? timeSince(match.started_at) : '—'}
           </div>
           <div style={{ fontSize: '10px', color: COLORS.textDim, marginTop: '2px' }}>
             WATCH &rarr;
@@ -445,7 +445,7 @@ function RecentMatchCard({
             fontFamily: FONTS.mono,
           }}>SETTLED</span>
           <span style={{ fontSize: '10px', color: COLORS.textDim }}>
-            {match.ended_at ? timeSince(match.ended_at) : '\u2014'}
+            {match.ended_at ? timeSince(match.ended_at) : '—'}
           </span>
         </div>
         <div style={{ fontSize: '11px', color: COLORS.textMuted, marginBottom: '4px' }}>

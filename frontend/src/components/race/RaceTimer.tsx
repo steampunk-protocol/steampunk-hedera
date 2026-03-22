@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { COLORS, FONTS } from '@/config/theme'
 
 interface Props {
   raceStatus?: string
@@ -28,7 +29,7 @@ export function RaceTimer({ raceStatus }: Props) {
   const secs = (elapsed % 60).toString().padStart(2, '0')
 
   return (
-    <span style={{ fontFamily: 'monospace', color: '#B8860B', fontSize: '16px' }}>
+    <span style={{ fontFamily: FONTS.mono, color: COLORS.primary, fontSize: '16px' }}>
       {raceStatus === 'waiting' ? 'WAITING...' : `${mins}:${secs}`}
     </span>
   )

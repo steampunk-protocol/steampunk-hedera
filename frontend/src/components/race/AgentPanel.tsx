@@ -81,10 +81,10 @@ export function AgentPanel({ player, reasoning, index = 0, strategy }: Props) {
       {/* Stats */}
       <div style={{ textAlign: 'right' }}>
         <div style={{ fontSize: '11px', color: '#c4952a' }}>
-          Lap {player.lap}/{player.total_laps}
+          Round {player.lap}/{player.total_laps}
         </div>
         <div style={{ fontSize: '11px', color: '#666' }}>
-          {player.speed > 0 ? `${player.speed.toFixed(0)} km/h` : '—'}
+          {player.speed > 0 ? `Score: ${player.speed.toFixed(0)}` : '—'}
         </div>
         {player.item && (
           <div style={{ fontSize: '10px', color: '#a855f7', marginTop: '2px' }}>
