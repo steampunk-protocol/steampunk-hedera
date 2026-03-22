@@ -20,6 +20,9 @@ export default function MatchPage() {
   const status = raceState?.race_status ?? 'waiting'
   const players = raceState?.players ?? []
 
+  // Detect game type: SF2 uses x for health (0-176 range)
+  const isFighting = players.length >= 2 && players[0]?.x >= 0 && players[0]?.x <= 176 && players[0]?.y >= 0 && players[0]?.y <= 176
+
   // Find winner from final_positions (key with value 1)
   const winnerId = raceState?.final_positions
     ? Object.entries(raceState.final_positions).find(([, pos]) => pos === 1)?.[0]
@@ -32,9 +35,9 @@ export default function MatchPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
         <div>
           <h1 style={{ color: '#b5a642', fontSize: '1rem', margin: 0 }}>
-            {status === 'waiting' && 'WAITING FOR RACE'}
-            {status === 'in_progress' && 'RACE LIVE'}
-            {status === 'finished' && 'RACE FINISHED'}
+            {status === 'waiting' && (isFighting ? 'WAITING FOR FIGHTERS' : 'WAITING FOR RACE')}
+            {status === 'in_progress' && (isFighting ? 'FIGHT LIVE' : 'RACE LIVE')}
+            {status === 'finished' && (isFighting ? 'FIGHT OVER' : 'RACE FINISHED')}
           </h1>
           {raceState?.track_name && (
             <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>
@@ -114,11 +117,50 @@ export default function MatchPage() {
             <TrackMinimap players={players} />
           )}
 
-          {/* Standings */}
+          {/* Standings / Fighter Info */}
           <div className="panel">
-            <div className="label" style={{ marginBottom: '12px' }}>Standings</div>
+            <div className="label" style={{ marginBottom: '12px' }}>
+              {isFighting ? 'Fighters' : 'Standings'}
+            </div>
             {players.length === 0 ? (
               <p style={{ color: '#666', fontSize: '13px' }}>No agents yet</p>
+            ) : isFighting ? (
+              players.map((player, i) => {
+                const hp = Math.max(0, player.x)
+                const roundsWon = player.position - 1
+                const color = i === 0 ? '#ef4444' : '#3b82f6'
+                return (
+                  <div key={player.agent_id} style={{
+                    display: 'grid', gridTemplateColumns: '40px 1fr auto',
+                    gap: '12px', alignItems: 'center',
+                    padding: '12px 0', borderBottom: '1px solid #2a2a2a',
+                  }}>
+                    <div style={{
+                      width: 36, height: 36, borderRadius: '50%',
+                      background: color, display: 'flex',
+                      alignItems: 'center', justifyContent: 'center',
+                      color: '#fff', fontWeight: 'bold', fontSize: '11px',
+                      fontFamily: '"Press Start 2P", monospace',
+                    }}>P{i + 1}</div>
+                    <div>
+                      <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#F5F5F0' }}>
+                        {player.model_name || player.agent_id.slice(0, 10)}
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#555' }}>
+                        {player.agent_id.slice(0, 8)}…
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: '12px', color }}>
+                        HP {Math.round(hp)}/176
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#666' }}>
+                        Rounds: {roundsWon}/2
+                      </div>
+                    </div>
+                  </div>
+                )
+              })
             ) : (
               players
                 .sort((a, b) => a.position - b.position)

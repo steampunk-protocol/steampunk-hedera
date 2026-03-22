@@ -204,18 +204,41 @@ async def emulator_ws(websocket: WebSocket):
             await emulator_registry.unregister(conn.emulator_id)
 
 
+_agent_name_cache: dict[str, str] = {}
+
+
+async def _get_agent_name(agent_id: str) -> str:
+    """Look up agent name from DB, with cache."""
+    if agent_id in _agent_name_cache:
+        return _agent_name_cache[agent_id]
+    try:
+        from sqlalchemy import select
+        from arena.db.models import AsyncSessionLocal, AgentModel
+        async with AsyncSessionLocal() as session:
+            stmt = select(AgentModel).where(AgentModel.address == agent_id)
+            result = await session.execute(stmt)
+            agent = result.scalar_one_or_none()
+            name = agent.name if agent else agent_id[:10]
+            _agent_name_cache[agent_id] = name
+            return name
+    except Exception:
+        return agent_id[:10]
+
+
 async def _handle_tick(conn: EmulatorConnection, raw: str):
     """Forward emulator tick to public WS as RaceTickMessage."""
     tick = EmulatorTickMessage.from_json(raw)
     conn._last_tick = tick
     match_id = tick.match_id
 
-    players = [
-        PlayerState(
+    players = []
+    for p in tick.players:
+        name = await _get_agent_name(p.agent_id)
+        players.append(PlayerState(
             agent_id=p.agent_id,
             wallet_address=p.agent_id,
-            model_name="unknown",
-            character="toad",
+            model_name=name,
+            character="ryu" if p.player_index == 0 else "guile",
             position=p.position,
             lap=p.lap,
             total_laps=p.total_laps,
@@ -225,9 +248,7 @@ async def _handle_tick(conn: EmulatorConnection, raw: str):
             y=p.y,
             gap_to_leader_ms=0,
             finished=p.finished,
-        )
-        for p in tick.players
-    ]
+        ))
 
     public_tick = RaceTickMessage(
         match_id=match_id,
