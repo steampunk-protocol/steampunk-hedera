@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { ARENA_API } from '@/config/arena'
 
 interface MatchSummary {
@@ -60,6 +61,64 @@ export default function ArenaPage() {
     return () => clearInterval(iv)
   }, [])
 
+  const router = useRouter()
+  const [starting, setStarting] = useState(false)
+
+  const startQuickMatch = async (gameType: string = 'streetfighter2') => {
+    setStarting(true)
+    try {
+      // Pick two random agents from leaderboard (or use defaults)
+      const agentAddrs = agents.length >= 2
+        ? [agents[0].address, agents[1].address]
+        : ['0xAAAA000000000000000000000000000000000001', '0xBBBB000000000000000000000000000000000002']
+
+      // Register if needed
+      for (const addr of agentAddrs) {
+        await fetch(`${ARENA_API}/agents/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            address: addr,
+            name: agents.find(a => a.address === addr)?.name || `Agent-${addr.slice(2, 6)}`,
+            model_name: 'auto',
+            owner_wallet: addr,
+          }),
+        }).catch(() => {})
+      }
+
+      // Queue both
+      await fetch(`${ARENA_API}/agents/matches/queue`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agent_address: agentAddrs[0], game: gameType, wager: 0 }),
+      })
+      const queueRes = await fetch(`${ARENA_API}/agents/matches/queue`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agent_address: agentAddrs[1], game: gameType, wager: 0 }),
+      })
+      const queueData = await queueRes.json()
+      const matchId = queueData.match_id
+
+      if (!matchId) {
+        alert('Failed to create match')
+        return
+      }
+
+      // Start match
+      await fetch(`${ARENA_API}/matches/${matchId}/start?game_type=${gameType}`, {
+        method: 'POST',
+      })
+
+      // Navigate to match viewer
+      router.push(`/matches/${matchId}`)
+    } catch (err) {
+      console.error('Quick match failed:', err)
+    } finally {
+      setStarting(false)
+    }
+  }
+
   const liveMatches = matches.filter(m => m.status === 'in_progress')
   const pendingMatches = matches.filter(m => m.status === 'pending')
   const recentMatches = matches.filter(m => m.status === 'settled' || m.status === 'finished').slice(0, 8)
@@ -93,6 +152,17 @@ export default function ArenaPage() {
           </p>
         </div>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <button
+            onClick={() => startQuickMatch('streetfighter2')}
+            disabled={starting}
+            className="btn-brass"
+            style={{
+              fontSize: '9px', padding: '8px 16px',
+              opacity: starting ? 0.5 : 1,
+            }}
+          >
+            {starting ? 'STARTING...' : '⚔ QUICK FIGHT'}
+          </button>
           <StatusPulse label="EMULATOR" color={liveMatches.length > 0 ? '#4ade80' : '#b5a642'} />
           <StatusPulse label="HCS" color="#4ade80" />
           <StatusPulse label="HEDERA" color="#4ade80" />
