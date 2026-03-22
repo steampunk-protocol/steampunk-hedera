@@ -44,7 +44,12 @@ Thumbs.db
 *.z64
 *.n64
 *.v64
-*.zip
+*.gen
+*.md5
+*.bin
+*.smc
+*.sfc
+game/
 roms/
 
 # Misc

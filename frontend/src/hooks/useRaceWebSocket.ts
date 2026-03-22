@@ -25,6 +25,7 @@ export interface RaceState {
   final_positions?: Record<string, number>
   finish_times_ms?: Record<string, number>
   match_result_hash?: string
+  frame_b64?: string | null  // base64 JPEG game frame
 }
 
 export function useRaceWebSocket(matchId: string) {
@@ -80,6 +81,7 @@ export function useRaceWebSocket(matchId: string) {
             final_positions: prev?.final_positions,
             finish_times_ms: prev?.finish_times_ms,
             match_result_hash: prev?.match_result_hash,
+            frame_b64: tick.frame_b64 ?? prev?.frame_b64,
           }))
         } else if (msg.type === 'race_end') {
           const end = msg as RaceEndMessage

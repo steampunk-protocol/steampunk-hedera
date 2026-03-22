@@ -40,6 +40,7 @@ class RaceTickMessage:
     race_status: str = "in_progress"  # "waiting" | "in_progress" | "finished"
     players: list[PlayerState] = field(default_factory=list)
     timestamp_ms: int = 0
+    frame_b64: Optional[str] = None   # base64 JPEG game frame (SF2 only)
 
     def to_json(self) -> str:
         return json.dumps(asdict(self))

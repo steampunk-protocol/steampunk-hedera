@@ -66,10 +66,12 @@ class RaceRunner:
         agents: list[str],   # agent wallet addresses
         track_id: int = 0,
         adapter: Optional[GameAdapter] = None,
+        game_type: str = "mariokart64",
     ):
         self.match_id = match_id
         self.agents = [a.lower() for a in agents]
         self.track_id = track_id
+        self.game_type = game_type
         # Allow injecting adapter for testing (forces local mode)
         self._injected_adapter = adapter
         self.adapter = adapter or MK64GameAdapter(
@@ -103,7 +105,7 @@ class RaceRunner:
         """
         from arena.ws.emulator_bridge import emulator_registry
 
-        emu = await emulator_registry.get_available(game="mariokart64")
+        emu = await emulator_registry.get_available(game=self.game_type)
         if emu is None:
             logger.info(f"No emulator available for match {self.match_id}, falling back to local adapter")
             return None
@@ -117,6 +119,7 @@ class RaceRunner:
                 agents=self.agents,
                 track_id=self.track_id,
                 total_laps=3,
+                game_type=self.game_type,
             )
             self._start_time_ms = int(time.time() * 1000)
 

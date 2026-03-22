@@ -242,7 +242,7 @@ async def start_match(
         adapter = StrategyGameAdapter()
         _active_strategy_adapters[match_id] = adapter
 
-    runner = RaceRunner(match_id=match_id, agents=agent_list, adapter=adapter)
+    runner = RaceRunner(match_id=match_id, agents=agent_list, adapter=adapter, game_type=game_type)
 
     async def _run():
         try:

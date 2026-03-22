@@ -25,6 +25,7 @@ export interface RaceTickMessage {
   race_status: string;
   players: PlayerState[];
   timestamp_ms: number;
+  frame_b64?: string | null;  // base64 JPEG of game frame (SF2)
 }
 
 export interface RaceStartMessage {

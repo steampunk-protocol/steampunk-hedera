@@ -50,6 +50,7 @@ class EmulatorConnection:
 
     async def send_start_match(
         self, match_id: str, agents: list[str], track_id: int = 0, total_laps: int = 3,
+        game_type: str = "mariokart64",
     ):
         self._race_completed.clear()
         self._race_result = None
@@ -58,6 +59,7 @@ class EmulatorConnection:
             agents=agents,
             track_id=track_id,
             total_laps=total_laps,
+            game_type=game_type,
         )
         self.current_match_id = match_id
         await self.ws.send_text(cmd.to_json())
@@ -233,6 +235,7 @@ async def _handle_tick(conn: EmulatorConnection, raw: str):
         race_status=tick.race_status,
         players=players,
         timestamp_ms=tick.timestamp_ms,
+        frame_b64=tick.frame_b64,
     )
     await manager.broadcast_tick(match_id, public_tick)
 

@@ -46,6 +46,7 @@ class EmulatorTickMessage:
     race_status: str = "in_progress"   # "waiting" | "in_progress" | "finished"
     players: list[EmulatorPlayerState] = field(default_factory=list)
     timestamp_ms: int = 0
+    frame_b64: Optional[str] = None    # base64 JPEG of current game frame (SF2 only)
 
     def to_json(self) -> str:
         return json.dumps(asdict(self))
@@ -112,6 +113,7 @@ class ArenaStartMatchCommand:
     agents: list[str] = field(default_factory=list)  # wallet addresses (Hedera EVM addresses)
     track_id: int = 0
     total_laps: int = 3
+    game_type: str = "mariokart64"  # "mariokart64" | "streetfighter2" | "clash_of_wits"
 
     def to_json(self) -> str:
         return json.dumps(asdict(self))
