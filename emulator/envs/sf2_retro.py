@@ -304,11 +304,12 @@ class StreetFighter2RetroEnv:
             return self._stub_step()
 
         # Merge P1 and P2 actions into single 24-element array
-        p1_action = actions.get("agent_0", np.zeros(TOTAL_BUTTONS, dtype=np.int8))
-        p2_action = actions.get("agent_1", np.zeros(TOTAL_BUTTONS, dtype=np.int8))
+        # Agents return 12-button arrays; we place them into the correct half
+        p1_action = actions.get("agent_0", np.zeros(BUTTONS_PER_PLAYER, dtype=np.int8))
+        p2_action = actions.get("agent_1", np.zeros(BUTTONS_PER_PLAYER, dtype=np.int8))
         combined = np.zeros(TOTAL_BUTTONS, dtype=np.int8)
         combined[:BUTTONS_PER_PLAYER] = p1_action[:BUTTONS_PER_PLAYER]
-        combined[BUTTONS_PER_PLAYER:] = p2_action[BUTTONS_PER_PLAYER:]
+        combined[BUTTONS_PER_PLAYER:] = p2_action[:BUTTONS_PER_PLAYER]
 
         obs, reward, terminated, truncated, info = self._env.step(combined)
         self._frame = obs if isinstance(obs, np.ndarray) else None
