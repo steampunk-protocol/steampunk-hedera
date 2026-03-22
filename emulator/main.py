@@ -98,7 +98,7 @@ class EmulatorService:
             # Announce readiness
             ready = EmulatorReadyMessage(
                 emulator_id=self.emulator_id,
-                supported_games=["mariokart64"],
+                supported_games=["mariokart64", "streetfighter2"],
                 max_agents=4,
             )
             await ws.send(ready.to_json())
@@ -164,12 +164,19 @@ class EmulatorService:
 
     async def _run_match(self, ws, cmd: ArenaStartMatchCommand):
         """
-        Run a full match: init env, create agents, step loop, send results.
+        Run a full match. Dispatches to game-specific runner based on game_type.
         """
+        game_type = getattr(cmd, "game_type", "mariokart64")
+        if game_type == "streetfighter2":
+            return await self._run_sf2_match(ws, cmd)
+        return await self._run_mk64_match(ws, cmd)
+
+    async def _run_mk64_match(self, ws, cmd: ArenaStartMatchCommand):
+        """Run a Mario Kart 64 match (original flow)."""
         self._match_id = cmd.match_id
         self._running = True
         n_agents = len(cmd.agents)
-        logger.info(f"Starting match {cmd.match_id}: {n_agents} agents, track={cmd.track_id}")
+        logger.info(f"Starting MK64 match {cmd.match_id}: {n_agents} agents, track={cmd.track_id}")
 
         try:
             # Create environment
@@ -270,6 +277,154 @@ class EmulatorService:
             if self.env:
                 self.env.close()
                 self.env = None
+            self._agents.clear()
+            self._running = False
+
+
+    async def _run_sf2_match(self, ws, cmd: ArenaStartMatchCommand):
+        """
+        Run a Street Fighter II match.
+        Uses native 2-player Genesis env (single instance, no multi-process).
+        """
+        from emulator.envs.sf2_retro import StreetFighter2RetroEnv, sf2_move_to_action, MAX_HEALTH
+        from emulator.agents.sf2_agent import SF2Agent, SF2Observation as AgentSF2Obs
+        import base64
+        from io import BytesIO
+        from PIL import Image
+
+        self._match_id = cmd.match_id
+        self._running = True
+        logger.info(f"Starting SF2 match {cmd.match_id}: {cmd.agents}")
+
+        sf2_env = None
+        try:
+            sf2_env = StreetFighter2RetroEnv()
+
+            # Create SF2 agents
+            agent_map = {}
+            for i, addr in enumerate(cmd.agents[:2]):
+                agent = SF2Agent(
+                    name=f"agent-{i}",
+                    player_index=i,
+                    strategy="balanced",
+                )
+                agent_map[f"agent_{i}"] = (addr, agent)
+                self._agents[addr] = agent
+
+            logger.info("Calling sf2_env.reset()...")
+            observations = sf2_env.reset()
+            logger.info(f"SF2 env reset complete")
+
+            tick = 0
+            frame_interval = 3  # send frame every 3rd tick (~20fps)
+
+            while self._running:
+                tick += 1
+
+                # Process strategy updates
+                self._drain_incoming_queue()
+
+                # Collect actions from both agents
+                actions = {}
+                for slot_id, (addr, agent) in agent_map.items():
+                    obs = observations.get(slot_id)
+                    if obs and not obs.finished:
+                        # Convert env observation to agent observation format
+                        agent_obs = AgentSF2Obs(
+                            my_health=obs.health / MAX_HEALTH,
+                            opp_health=obs.enemy_health / MAX_HEALTH,
+                            distance=0.5,  # no spatial data in RAM
+                            frame=tick,
+                            round_over=obs.health <= 0 or obs.enemy_health <= 0,
+                        )
+                        action_arr = agent.decide_action(agent_obs)
+                        actions[slot_id] = action_arr
+
+                # Step env
+                observations, rewards, done, info = sf2_env.step(actions)
+
+                # Build tick message with SF2 state mapped to EmulatorPlayerState
+                players = []
+                for slot_id, (addr, agent) in agent_map.items():
+                    obs = observations.get(slot_id)
+                    if obs:
+                        players.append(EmulatorPlayerState(
+                            agent_id=addr,
+                            player_index=int(slot_id[-1]),
+                            x=float(obs.health),         # health as x (0-176)
+                            y=float(obs.enemy_health),    # enemy health as y
+                            position=obs.matches_won + 1, # rounds won + 1
+                            lap=obs.round,                # current round
+                            total_laps=3,                 # best of 3
+                            speed=float(obs.health),      # health as speed (for UI compat)
+                            item=None,
+                            finished=obs.finished,
+                            finish_time_ms=tick * 16 if obs.finished else 0,
+                        ))
+
+                # Encode frame as base64 JPEG (every Nth tick)
+                frame_b64 = None
+                if tick % frame_interval == 0:
+                    frame = sf2_env.get_frame()
+                    if frame is not None:
+                        try:
+                            img = Image.fromarray(frame)
+                            # Scale up 2x for visibility
+                            img = img.resize((512, 400), Image.NEAREST)
+                            buf = BytesIO()
+                            img.save(buf, format="JPEG", quality=60)
+                            frame_b64 = base64.b64encode(buf.getvalue()).decode("ascii")
+                        except Exception:
+                            pass
+
+                tick_msg = EmulatorTickMessage(
+                    match_id=cmd.match_id,
+                    tick=tick,
+                    race_status="finished" if done else "in_progress",
+                    players=players,
+                    timestamp_ms=int(time.time() * 1000),
+                    frame_b64=frame_b64,
+                )
+                await ws.send(tick_msg.to_json())
+
+                if done:
+                    break
+
+                # Genesis runs at 60fps — env.step() is fast, add small sleep
+                await asyncio.sleep(0.016)  # ~60fps
+
+            # Build race end result
+            winner_slot = sf2_env.winner
+            zero = "0x" + "0" * 40
+            agents_padded = list(cmd.agents[:2]) + [zero] * (4 - len(cmd.agents[:2]))
+
+            # Map winner to final positions
+            final_positions = [0, 0, 0, 0]
+            finish_times = [0, 0, 0, 0]
+            for i, addr in enumerate(cmd.agents[:2]):
+                slot_id = f"agent_{i}"
+                if slot_id == winner_slot:
+                    final_positions[i] = 1
+                else:
+                    final_positions[i] = 2
+                finish_times[i] = tick * 16
+
+            end_msg = EmulatorRaceEndMessage(
+                match_id=cmd.match_id,
+                agents=agents_padded,
+                final_positions=final_positions,
+                finish_times_ms=finish_times,
+                track_id=0,
+                timestamp_ms=int(time.time() * 1000),
+            )
+            await ws.send(end_msg.to_json())
+            logger.info(f"SF2 match {cmd.match_id} complete. Winner: {winner_slot}")
+
+        except Exception as e:
+            logger.error(f"SF2 match {cmd.match_id} failed: {e}", exc_info=True)
+        finally:
+            if sf2_env:
+                sf2_env.close()
             self._agents.clear()
             self._running = False
 
