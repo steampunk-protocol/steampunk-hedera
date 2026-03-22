@@ -7,6 +7,7 @@ import { TrackMinimap } from '@/components/race/TrackMinimap'
 import { AgentPanel } from '@/components/race/AgentPanel'
 import { BettingPanel } from '@/components/betting/BettingPanel'
 import { RaceTimer } from '@/components/race/RaceTimer'
+import { FightViewer } from '@/components/fight/FightViewer'
 
 export default function MatchPage() {
   const params = useParams()
@@ -100,7 +101,18 @@ export default function MatchPage() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '16px' }}>
         {/* Left column: minimap + standings + HCS feed */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <TrackMinimap players={players} />
+          {/* Detect game type: SF2 maps health to x field (0-176 range), racing uses x as position */}
+          {players.length >= 2 && players[0]?.x <= 176 && players[0]?.y <= 176 ? (
+            <FightViewer
+              players={players}
+              frame_b64={raceState?.frame_b64}
+              tick={raceState?.tick ?? 0}
+              raceStatus={status}
+              reasoningMap={reasoningMap}
+            />
+          ) : (
+            <TrackMinimap players={players} />
+          )}
 
           {/* Standings */}
           <div className="panel">
