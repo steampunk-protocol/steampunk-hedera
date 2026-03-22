@@ -18,7 +18,7 @@ export function AgentCard({ name, model, walletAddress, elo, matchesPlayed, wins
     : null
 
   // ELO color coding
-  const eloColor = elo >= 1400 ? '#B8860B' : elo >= 1200 ? '#B87333' : elo >= 1000 ? '#CD7F32' : '#999'
+  const eloColor = elo >= 1400 ? '#c4952a' : elo >= 1200 ? '#8b6914' : elo >= 1000 ? '#CD7F32' : '#999'
 
   return (
     <div className="panel" style={{ maxWidth: '300px' }}>
@@ -30,10 +30,10 @@ export function AgentCard({ name, model, walletAddress, elo, matchesPlayed, wins
         marginBottom: '12px',
       }}>
         <div>
-          <div style={{ fontWeight: 'bold', color: '#B8860B', marginBottom: '4px', fontSize: '14px' }}>{name}</div>
+          <div style={{ fontWeight: 'bold', color: '#c4952a', marginBottom: '4px', fontSize: '14px' }}>{name}</div>
           <span style={{
             fontSize: '10px',
-            color: '#B87333',
+            color: '#8b6914',
             padding: '2px 8px',
             background: '#2a2018',
             borderRadius: '3px',
@@ -68,7 +68,7 @@ export function AgentCard({ name, model, walletAddress, elo, matchesPlayed, wins
       {/* Divider */}
       <div style={{
         height: '1px',
-        background: 'linear-gradient(to right, #b5a64233, #b5a642, #b5a64233)',
+        background: 'linear-gradient(to right, #c4952a33, #c4952a, #c4952a33)',
         marginBottom: '12px',
       }} />
 
@@ -80,7 +80,7 @@ export function AgentCard({ name, model, walletAddress, elo, matchesPlayed, wins
         marginBottom: '12px',
       }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '14px', color: '#4ade80', fontWeight: 'bold' }}>
+          <div style={{ fontSize: '14px', color: '#22c55e', fontWeight: 'bold' }}>
             {wins ?? 0}
           </div>
           <div className="label" style={{ marginTop: '2px' }}>Wins</div>
@@ -110,7 +110,7 @@ export function AgentCard({ name, model, walletAddress, elo, matchesPlayed, wins
           }}>
             <span className="label">Win Rate</span>
             <span style={{
-              color: winRate >= 60 ? '#4ade80' : winRate >= 40 ? '#B8860B' : '#ef4444',
+              color: winRate >= 60 ? '#22c55e' : winRate >= 40 ? '#c4952a' : '#ef4444',
               fontWeight: 'bold',
               fontSize: '11px',
             }}>
@@ -120,7 +120,7 @@ export function AgentCard({ name, model, walletAddress, elo, matchesPlayed, wins
           <div style={{
             width: '100%',
             height: '4px',
-            background: '#2a2a2e',
+            background: '#0f0f13',
             borderRadius: '2px',
             overflow: 'hidden',
           }}>
@@ -128,9 +128,9 @@ export function AgentCard({ name, model, walletAddress, elo, matchesPlayed, wins
               width: `${winRate}%`,
               height: '100%',
               background: winRate >= 60
-                ? 'linear-gradient(to right, #4ade80, #22c55e)'
+                ? 'linear-gradient(to right, #22c55e, #22c55e)'
                 : winRate >= 40
-                ? 'linear-gradient(to right, #B8860B, #B87333)'
+                ? 'linear-gradient(to right, #c4952a, #8b6914)'
                 : 'linear-gradient(to right, #ef4444, #dc2626)',
               borderRadius: '2px',
               transition: 'width 0.3s ease',
@@ -152,7 +152,7 @@ export function AgentCard({ name, model, walletAddress, elo, matchesPlayed, wins
             <span style={{
               fontSize: '8px',
               fontFamily: '"Press Start 2P", monospace',
-              color: '#b5a642',
+              color: '#c4952a',
               letterSpacing: '0.1em',
             }}>
               HCS-10
@@ -162,14 +162,14 @@ export function AgentCard({ name, model, walletAddress, elo, matchesPlayed, wins
               target="_blank"
               rel="noopener noreferrer"
               style={{
-                color: '#B87333',
+                color: '#8b6914',
                 textDecoration: 'none',
                 fontSize: '11px',
                 fontFamily: 'monospace',
                 transition: 'color 0.15s',
               }}
               onMouseEnter={(e) => (e.currentTarget.style.color = '#e8dcc8')}
-              onMouseLeave={(e) => (e.currentTarget.style.color = '#B87333')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = '#8b6914')}
             >
               {hcsTopicId}
             </a>

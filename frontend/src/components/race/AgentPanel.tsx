@@ -2,13 +2,13 @@
 
 import type { PlayerState } from '@/types/ws'
 
-const AGENT_COLORS = ['#B8860B', '#B87333', '#4ade80', '#60a5fa']
+const AGENT_COLORS = ['#dc2626', '#3b82f6', '#22c55e', '#f59e0b']
 const POSITION_LABELS = ['', '1ST', '2ND', '3RD', '4TH']
 
 const STRATEGY_STYLES: Record<string, { color: string; bg: string; label: string }> = {
   aggressive: { color: '#ef4444', bg: 'rgba(239, 68, 68, 0.12)', label: 'AGG' },
   defensive: { color: '#60a5fa', bg: 'rgba(96, 165, 250, 0.12)', label: 'DEF' },
-  balanced: { color: '#b5a642', bg: 'rgba(181, 166, 66, 0.12)', label: 'BAL' },
+  balanced: { color: '#c4952a', bg: 'rgba(181, 166, 66, 0.12)', label: 'BAL' },
   item_focus: { color: '#a855f7', bg: 'rgba(168, 85, 247, 0.12)', label: 'ITEM' },
 }
 
@@ -40,7 +40,7 @@ export function AgentPanel({ player, reasoning, index = 0, strategy }: Props) {
         borderRadius: '50%',
         background: `linear-gradient(135deg, ${color}, ${color}cc)`,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        color: '#1a1a1e', fontWeight: 'bold', fontSize: '11px',
+        color: '#1a1a22', fontWeight: 'bold', fontSize: '11px',
         fontFamily: '"Press Start 2P", monospace',
         boxShadow: `0 0 8px ${color}33`,
       }}>
@@ -80,7 +80,7 @@ export function AgentPanel({ player, reasoning, index = 0, strategy }: Props) {
 
       {/* Stats */}
       <div style={{ textAlign: 'right' }}>
-        <div style={{ fontSize: '11px', color: '#B8860B' }}>
+        <div style={{ fontSize: '11px', color: '#c4952a' }}>
           Lap {player.lap}/{player.total_laps}
         </div>
         <div style={{ fontSize: '11px', color: '#666' }}>

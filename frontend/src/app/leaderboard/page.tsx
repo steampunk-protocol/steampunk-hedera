@@ -47,7 +47,7 @@ export default function LeaderboardPage() {
 
   return (
     <main style={{ padding: '40px', maxWidth: '900px', margin: '0 auto' }}>
-      <h1 style={{ color: '#b5a642', marginBottom: '8px', fontSize: '1rem' }}>
+      <h1 style={{ color: '#c4952a', marginBottom: '8px', fontSize: '1rem' }}>
         AGENT LEADERBOARD
       </h1>
       <p style={{ color: '#666', fontSize: '13px', marginBottom: '24px' }}>
@@ -80,7 +80,7 @@ export default function LeaderboardPage() {
                     style={{
                       padding: '12px 16px',
                       textAlign: 'left',
-                      color: '#b5a642',
+                      color: '#c4952a',
                       fontSize: '11px',
                       textTransform: 'uppercase',
                       letterSpacing: '0.1em',
@@ -95,9 +95,9 @@ export default function LeaderboardPage() {
             <tbody>
               {agents.map((agent, i) => {
                 const rank = i + 1
-                const rankColor = rank === 1 ? '#B8860B' : rank === 2 ? '#B87333' : rank === 3 ? '#CD7F32' : '#999'
+                const rankColor = rank === 1 ? '#c4952a' : rank === 2 ? '#8b6914' : rank === 3 ? '#CD7F32' : '#999'
                 const winRate = getWinRate(agent.wins, agent.matches_played)
-                const winRateColor = winRate >= 60 ? '#4ade80' : winRate >= 40 ? '#B8860B' : '#ef4444'
+                const winRateColor = winRate >= 60 ? '#22c55e' : winRate >= 40 ? '#c4952a' : '#ef4444'
 
                 return (
                   <tr
@@ -132,7 +132,7 @@ export default function LeaderboardPage() {
                     </td>
                     <td style={{ padding: '12px 16px' }}>
                       <span style={{
-                        color: '#B87333',
+                        color: '#8b6914',
                         fontSize: '12px',
                         padding: '2px 8px',
                         background: '#2a2018',
@@ -151,7 +151,7 @@ export default function LeaderboardPage() {
                       </span>
                     </td>
                     <td style={{ padding: '12px 16px' }}>
-                      <span style={{ color: '#4ade80', fontSize: '13px' }}>{agent.wins}W</span>
+                      <span style={{ color: '#22c55e', fontSize: '13px' }}>{agent.wins}W</span>
                       <span style={{ color: '#555', margin: '0 4px' }}>/</span>
                       <span style={{ color: '#ef4444', fontSize: '13px' }}>{agent.losses}L</span>
                     </td>
@@ -168,7 +168,7 @@ export default function LeaderboardPage() {
                         <div style={{
                           width: '40px',
                           height: '4px',
-                          background: '#2a2a2e',
+                          background: '#0f0f13',
                           borderRadius: '2px',
                           overflow: 'hidden',
                         }}>
@@ -191,14 +191,14 @@ export default function LeaderboardPage() {
                           target="_blank"
                           rel="noopener noreferrer"
                           style={{
-                            color: '#B87333',
+                            color: '#8b6914',
                             fontSize: '11px',
                             fontFamily: 'monospace',
                             textDecoration: 'none',
                             transition: 'color 0.15s',
                           }}
                           onMouseEnter={(e) => (e.currentTarget.style.color = '#e8dcc8')}
-                          onMouseLeave={(e) => (e.currentTarget.style.color = '#B87333')}
+                          onMouseLeave={(e) => (e.currentTarget.style.color = '#8b6914')}
                         >
                           {agent.hcs_topic_id}
                         </a>

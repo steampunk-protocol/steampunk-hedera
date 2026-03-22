@@ -1,8 +1,8 @@
 'use client'
 
 import type { PlayerState } from '@/types/ws'
+import { COLORS, FONTS } from '@/config/theme'
 
-const AGENT_COLORS = ['#ef4444', '#3b82f6']
 const MAX_HEALTH = 176
 
 interface Props {
@@ -19,9 +19,9 @@ export function FightViewer({ players, frame_b64, tick, raceStatus, reasoningMap
 
   if (!p1 && !p2) {
     return (
-      <div className="panel" style={{ padding: '48px', textAlign: 'center', color: '#555' }}>
-        <div style={{ fontSize: '32px', marginBottom: '12px' }}>🥊</div>
-        <div style={{ fontSize: '12px' }}>Waiting for fighters...</div>
+      <div className="panel" style={{ padding: '48px', textAlign: 'center', color: COLORS.textDim }}>
+        <div style={{ fontSize: '32px', marginBottom: '12px' }}>&#x2694;</div>
+        <div style={{ fontSize: '12px' }}>Waiting for competitors...</div>
       </div>
     )
   }
@@ -38,18 +38,22 @@ export function FightViewer({ players, frame_b64, tick, raceStatus, reasoningMap
   const p1Name = p1?.model_name || p1?.agent_id?.slice(0, 8) || 'P1'
   const p2Name = p2?.model_name || p2?.agent_id?.slice(0, 8) || 'P2'
 
+  const isLive = raceStatus === 'in_progress'
+
   return (
     <div className="panel" style={{
       padding: 0, overflow: 'hidden',
-      background: '#0a0a0c',
-      border: '1px solid #333',
+      background: COLORS.bg,
+      border: `1px solid ${isLive ? COLORS.primaryGlow : '#333'}`,
+      boxShadow: isLive ? `0 0 12px ${COLORS.primaryGlow}` : 'none',
+      transition: 'border-color 0.3s, box-shadow 0.3s',
     }}>
       {/* Top bar: health bars */}
       <div style={{
         display: 'grid', gridTemplateColumns: '1fr auto 1fr',
         gap: '8px', padding: '12px 16px',
-        background: 'linear-gradient(180deg, #1a1a1e, #0a0a0c)',
-        borderBottom: '1px solid #222',
+        background: `linear-gradient(180deg, ${COLORS.bgSurface}, ${COLORS.bg})`,
+        borderBottom: `1px solid ${COLORS.borderSubtle}`,
       }}>
         {/* P1 health */}
         <div>
@@ -58,14 +62,14 @@ export function FightViewer({ players, frame_b64, tick, raceStatus, reasoningMap
             marginBottom: '4px', fontSize: '10px',
           }}>
             <span style={{
-              color: AGENT_COLORS[0], fontWeight: 'bold',
-              fontFamily: '"Press Start 2P", monospace',
+              color: COLORS.agents[0], fontWeight: 'bold',
+              fontFamily: FONTS.heading,
               fontSize: '8px',
             }}>{p1Name}</span>
-            <span style={{ color: '#666' }}>{Math.round(p1Health)}</span>
+            <span style={{ color: COLORS.textMuted }}>{Math.round(p1Health)}</span>
           </div>
           <div style={{
-            height: '16px', background: '#1a0000',
+            height: '16px', background: COLORS.bgCard,
             borderRadius: '2px', overflow: 'hidden',
             border: '1px solid #333',
           }}>
@@ -73,11 +77,11 @@ export function FightViewer({ players, frame_b64, tick, raceStatus, reasoningMap
               height: '100%',
               width: `${p1Pct}%`,
               background: p1Pct > 30
-                ? 'linear-gradient(180deg, #ef4444, #b91c1c)'
+                ? `linear-gradient(180deg, ${COLORS.agents[0]}, #b91c1c)`
                 : 'linear-gradient(180deg, #f97316, #c2410c)',
               borderRadius: '1px',
               transition: 'width 0.15s ease-out',
-              boxShadow: p1Pct > 0 ? `0 0 8px ${p1Pct > 30 ? '#ef444444' : '#f9731644'}` : 'none',
+              boxShadow: p1Pct > 0 ? `0 0 8px ${p1Pct > 30 ? COLORS.agentGlows[0] : '#f9731644'}` : 'none',
             }} />
           </div>
           {/* Round wins */}
@@ -85,9 +89,9 @@ export function FightViewer({ players, frame_b64, tick, raceStatus, reasoningMap
             {[0, 1].map(i => (
               <div key={i} style={{
                 width: 10, height: 10, borderRadius: '50%',
-                background: i < p1RoundsWon ? AGENT_COLORS[0] : '#222',
-                border: `1px solid ${i < p1RoundsWon ? AGENT_COLORS[0] : '#444'}`,
-                boxShadow: i < p1RoundsWon ? `0 0 4px ${AGENT_COLORS[0]}` : 'none',
+                background: i < p1RoundsWon ? COLORS.agents[0] : COLORS.borderSubtle,
+                border: `1px solid ${i < p1RoundsWon ? COLORS.agents[0] : '#444'}`,
+                boxShadow: i < p1RoundsWon ? `0 0 4px ${COLORS.agents[0]}` : 'none',
               }} />
             ))}
           </div>
@@ -100,16 +104,16 @@ export function FightViewer({ players, frame_b64, tick, raceStatus, reasoningMap
           minWidth: '60px',
         }}>
           <div style={{
-            fontSize: '7px', color: '#b5a642',
-            fontFamily: '"Press Start 2P", monospace',
+            fontSize: '7px', color: COLORS.primary,
+            fontFamily: FONTS.heading,
             letterSpacing: '0.1em',
           }}>
             ROUND
           </div>
           <div style={{
-            fontSize: '20px', fontWeight: 'bold', color: '#b5a642',
-            fontFamily: '"Press Start 2P", monospace',
-            textShadow: '0 0 12px rgba(181, 166, 66, 0.4)',
+            fontSize: '20px', fontWeight: 'bold', color: COLORS.primary,
+            fontFamily: FONTS.heading,
+            textShadow: `0 0 12px ${COLORS.primaryGlow}`,
           }}>
             {currentRound}
           </div>
@@ -121,15 +125,15 @@ export function FightViewer({ players, frame_b64, tick, raceStatus, reasoningMap
             display: 'flex', justifyContent: 'space-between',
             marginBottom: '4px', fontSize: '10px',
           }}>
-            <span style={{ color: '#666' }}>{Math.round(p2Health)}</span>
+            <span style={{ color: COLORS.textMuted }}>{Math.round(p2Health)}</span>
             <span style={{
-              color: AGENT_COLORS[1], fontWeight: 'bold',
-              fontFamily: '"Press Start 2P", monospace',
+              color: COLORS.agents[1], fontWeight: 'bold',
+              fontFamily: FONTS.heading,
               fontSize: '8px',
             }}>{p2Name}</span>
           </div>
           <div style={{
-            height: '16px', background: '#00001a',
+            height: '16px', background: COLORS.bgCard,
             borderRadius: '2px', overflow: 'hidden',
             border: '1px solid #333',
             direction: 'rtl',
@@ -138,20 +142,20 @@ export function FightViewer({ players, frame_b64, tick, raceStatus, reasoningMap
               height: '100%',
               width: `${p2Pct}%`,
               background: p2Pct > 30
-                ? 'linear-gradient(180deg, #3b82f6, #1d4ed8)'
+                ? `linear-gradient(180deg, ${COLORS.agents[1]}, #1d4ed8)`
                 : 'linear-gradient(180deg, #f97316, #c2410c)',
               borderRadius: '1px',
               transition: 'width 0.15s ease-out',
-              boxShadow: p2Pct > 0 ? `0 0 8px ${p2Pct > 30 ? '#3b82f644' : '#f9731644'}` : 'none',
+              boxShadow: p2Pct > 0 ? `0 0 8px ${p2Pct > 30 ? COLORS.agentGlows[1] : '#f9731644'}` : 'none',
             }} />
           </div>
           <div style={{ display: 'flex', gap: '4px', marginTop: '4px', justifyContent: 'flex-end' }}>
             {[0, 1].map(i => (
               <div key={i} style={{
                 width: 10, height: 10, borderRadius: '50%',
-                background: i < p2RoundsWon ? AGENT_COLORS[1] : '#222',
-                border: `1px solid ${i < p2RoundsWon ? AGENT_COLORS[1] : '#444'}`,
-                boxShadow: i < p2RoundsWon ? `0 0 4px ${AGENT_COLORS[1]}` : 'none',
+                background: i < p2RoundsWon ? COLORS.agents[1] : COLORS.borderSubtle,
+                border: `1px solid ${i < p2RoundsWon ? COLORS.agents[1] : '#444'}`,
+                boxShadow: i < p2RoundsWon ? `0 0 4px ${COLORS.agents[1]}` : 'none',
               }} />
             ))}
           </div>
@@ -168,11 +172,11 @@ export function FightViewer({ players, frame_b64, tick, raceStatus, reasoningMap
         {frame_b64 ? (
           <img
             src={`data:image/jpeg;base64,${frame_b64}`}
-            alt="SF2 Game Frame"
+            alt="Game Frame"
             style={{
               width: '100%', maxWidth: '640px',
               imageRendering: 'pixelated',
-              border: '1px solid #222',
+              border: `1px solid ${COLORS.borderSubtle}`,
             }}
           />
         ) : (
@@ -180,30 +184,30 @@ export function FightViewer({ players, frame_b64, tick, raceStatus, reasoningMap
             textAlign: 'center', color: '#333',
             padding: '60px 20px',
           }}>
-            <div style={{ fontSize: '48px', marginBottom: '12px' }}>⚔️</div>
+            <div style={{ fontSize: '48px', marginBottom: '12px' }}>&#x2694;</div>
             <div style={{
-              fontSize: '10px', color: '#555',
-              fontFamily: '"Press Start 2P", monospace',
+              fontSize: '10px', color: COLORS.textDim,
+              fontFamily: FONTS.heading,
             }}>
-              {raceStatus === 'in_progress' ? 'FIGHT IN PROGRESS' : 'WAITING'}
+              {isLive ? 'MATCH IN PROGRESS' : 'WAITING FOR MATCH'}
             </div>
-            <div style={{ fontSize: '11px', color: '#444', marginTop: '8px' }}>
+            <div style={{ fontSize: '11px', color: COLORS.textDim, marginTop: '8px' }}>
               Tick {tick}
             </div>
           </div>
         )}
 
         {/* KO overlay */}
-        {(p1Health <= 0 || p2Health <= 0) && raceStatus === 'in_progress' && (
+        {(p1Health <= 0 || p2Health <= 0) && isLive && (
           <div style={{
             position: 'absolute', inset: 0,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             background: 'rgba(0,0,0,0.5)',
           }}>
             <div style={{
-              fontSize: '24px', color: '#ef4444',
-              fontFamily: '"Press Start 2P", monospace',
-              textShadow: '0 0 20px rgba(239, 68, 68, 0.5)',
+              fontSize: '24px', color: COLORS.red,
+              fontFamily: FONTS.heading,
+              textShadow: `0 0 20px ${COLORS.redGlow}`,
               animation: 'ko-flash 0.5s ease-in-out infinite alternate',
             }}>
               K.O.
@@ -211,7 +215,7 @@ export function FightViewer({ players, frame_b64, tick, raceStatus, reasoningMap
           </div>
         )}
 
-        {/* FIGHT OVER overlay */}
+        {/* MATCH OVER overlay */}
         {raceStatus === 'finished' && (
           <div style={{
             position: 'absolute', inset: 0,
@@ -220,17 +224,17 @@ export function FightViewer({ players, frame_b64, tick, raceStatus, reasoningMap
             background: 'rgba(0,0,0,0.7)',
           }}>
             <div style={{
-              fontSize: '12px', color: '#b5a642',
-              fontFamily: '"Press Start 2P", monospace',
+              fontSize: '12px', color: COLORS.primary,
+              fontFamily: FONTS.heading,
               letterSpacing: '0.2em', marginBottom: '8px',
             }}>
               WINNER
             </div>
             <div style={{
               fontSize: '18px', fontWeight: 'bold',
-              color: p1RoundsWon >= 2 ? AGENT_COLORS[0] : AGENT_COLORS[1],
-              fontFamily: '"Press Start 2P", monospace',
-              textShadow: `0 0 20px ${p1RoundsWon >= 2 ? AGENT_COLORS[0] : AGENT_COLORS[1]}44`,
+              color: p1RoundsWon >= 2 ? COLORS.agents[0] : COLORS.agents[1],
+              fontFamily: FONTS.heading,
+              textShadow: `0 0 20px ${p1RoundsWon >= 2 ? COLORS.agentGlows[0] : COLORS.agentGlows[1]}`,
             }}>
               {p1RoundsWon >= 2 ? p1Name : p2Name}
             </div>
@@ -242,18 +246,18 @@ export function FightViewer({ players, frame_b64, tick, raceStatus, reasoningMap
       {(reasoningMap[p1?.agent_id] || reasoningMap[p2?.agent_id]) && (
         <div style={{
           display: 'grid', gridTemplateColumns: '1fr 1fr',
-          gap: '1px', background: '#222',
-          borderTop: '1px solid #222',
+          gap: '1px', background: COLORS.borderSubtle,
+          borderTop: `1px solid ${COLORS.borderSubtle}`,
         }}>
           {[p1, p2].map((p, i) => {
             if (!p) return null
             const reasoning = reasoningMap[p.agent_id]
             return (
               <div key={p.agent_id} style={{
-                padding: '8px 12px', background: '#0a0a0c',
-                fontSize: '10px', color: '#666',
+                padding: '8px 12px', background: COLORS.bg,
+                fontSize: '10px', color: COLORS.textMuted,
               }}>
-                <span style={{ color: AGENT_COLORS[i], fontWeight: 'bold' }}>
+                <span style={{ color: COLORS.agents[i], fontWeight: 'bold' }}>
                   {i === 0 ? p1Name : p2Name}
                 </span>
                 {reasoning && (

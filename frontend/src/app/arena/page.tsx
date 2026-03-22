@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ARENA_API } from '@/config/arena'
+import { BRAND, COLORS, FONTS, MATCH_LABELS, STATUS_STYLES } from '@/config/theme'
 
 interface MatchSummary {
   match_id: string
@@ -123,7 +124,7 @@ export default function ArenaPage() {
   const pendingMatches = matches.filter(m => m.status === 'pending')
   const recentMatches = matches.filter(m => m.status === 'settled' || m.status === 'finished').slice(0, 8)
 
-  const shortAddr = (addr: string) => addr.slice(0, 6) + '…' + addr.slice(-4)
+  const shortAddr = (addr: string) => addr.slice(0, 6) + '\u2026' + addr.slice(-4)
   const agentName = (addr: string) => {
     const a = agents.find(ag => ag.address === addr)
     return a?.name || shortAddr(addr)
@@ -141,14 +142,14 @@ export default function ArenaPage() {
       <div style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end',
         marginBottom: '24px', paddingBottom: '16px',
-        borderBottom: '1px solid rgba(181, 166, 66, 0.2)',
+        borderBottom: `1px solid ${COLORS.border}`,
       }}>
         <div>
-          <h1 style={{ fontSize: '14px', color: '#b5a642', margin: 0, letterSpacing: '0.15em' }}>
-            COMMAND CENTER
+          <h1 style={{ fontSize: '14px', color: COLORS.primary, margin: 0, letterSpacing: '0.15em', fontFamily: FONTS.heading }}>
+            ARENA
           </h1>
-          <p style={{ fontSize: '12px', color: '#666', marginTop: '4px', fontFamily: '"Space Mono", monospace' }}>
-            Live agent matches · strategy feeds · on-chain settlement
+          <p style={{ fontSize: '12px', color: COLORS.textDim, marginTop: '4px', fontFamily: FONTS.body }}>
+            Live AI matches &middot; real-time streaming &middot; on-chain settlement
           </p>
         </div>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
@@ -157,24 +158,34 @@ export default function ArenaPage() {
             disabled={starting}
             className="btn-brass"
             style={{
-              fontSize: '9px', padding: '8px 16px',
+              fontSize: '11px', padding: '12px 28px',
               opacity: starting ? 0.5 : 1,
+              background: COLORS.primary,
+              color: COLORS.bg,
+              border: 'none',
+              borderRadius: '4px',
+              fontFamily: FONTS.heading,
+              fontWeight: 'bold',
+              letterSpacing: '0.1em',
+              cursor: starting ? 'not-allowed' : 'pointer',
+              boxShadow: `0 0 20px ${COLORS.primaryGlow}`,
+              transition: 'all 0.2s',
             }}
           >
-            {starting ? 'STARTING...' : '⚔ QUICK FIGHT'}
+            {starting ? 'STARTING...' : 'QUICK FIGHT'}
           </button>
-          <StatusPulse label="EMULATOR" color={liveMatches.length > 0 ? '#4ade80' : '#b5a642'} />
-          <StatusPulse label="HCS" color="#4ade80" />
-          <StatusPulse label="HEDERA" color="#4ade80" />
+          <StatusPulse label="EMULATOR" color={liveMatches.length > 0 ? COLORS.primary : COLORS.primary} />
+          <StatusPulse label="HCS" color={COLORS.green} />
+          <StatusPulse label="HEDERA" color={COLORS.green} />
         </div>
       </div>
 
       {/* Stats row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '24px' }}>
-        <GaugeCard label="LIVE MATCHES" value={liveMatches.length} accent="#4ade80" />
-        <GaugeCard label="AGENTS ONLINE" value={agents.length} accent="#b5a642" />
-        <GaugeCard label="TOTAL MATCHES" value={matches.length} accent="#b87333" />
-        <GaugeCard label="PENDING" value={pendingMatches.length} accent="#60a5fa" />
+        <GaugeCard label="LIVE MATCHES" value={liveMatches.length} accent={COLORS.green} />
+        <GaugeCard label="AGENTS ONLINE" value={agents.length} accent={COLORS.primary} />
+        <GaugeCard label="TOTAL MATCHES" value={matches.length} accent={COLORS.agents[0]} />
+        <GaugeCard label="PENDING" value={pendingMatches.length} accent={COLORS.agents[1]} />
       </div>
 
       {/* Main grid: live + recent | leaderboard */}
@@ -182,10 +193,10 @@ export default function ArenaPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {/* Live matches */}
           <section>
-            <SectionHeader icon="●" iconColor="#4ade80" title="LIVE MATCHES" />
+            <SectionHeader icon="\u25CF" iconColor={COLORS.green} title="LIVE MATCHES" />
             {liveMatches.length === 0 ? (
-              <div className="panel" style={{ textAlign: 'center', padding: '32px', color: '#555' }}>
-                <div style={{ fontSize: '20px', marginBottom: '8px' }}>⚙</div>
+              <div className="panel" style={{ textAlign: 'center', padding: '32px', color: COLORS.textDim }}>
+                <div style={{ fontSize: '20px', marginBottom: '8px' }}>&#x2699;</div>
                 <div style={{ fontSize: '12px' }}>No active matches — queue agents to start</div>
               </div>
             ) : (
@@ -205,7 +216,7 @@ export default function ArenaPage() {
           {/* Pending matches */}
           {pendingMatches.length > 0 && (
             <section>
-              <SectionHeader icon="◐" iconColor="#60a5fa" title="PENDING" />
+              <SectionHeader icon="\u25D0" iconColor={COLORS.blue} title="PENDING" />
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {pendingMatches.map(m => (
                   <PendingMatchCard
@@ -221,9 +232,9 @@ export default function ArenaPage() {
 
           {/* Recent results */}
           <section>
-            <SectionHeader icon="◆" iconColor="#b87333" title="RECENT RESULTS" />
+            <SectionHeader icon="\u25C6" iconColor={COLORS.agents[0]} title="RECENT RESULTS" />
             {recentMatches.length === 0 ? (
-              <div className="panel" style={{ textAlign: 'center', padding: '24px', color: '#555', fontSize: '12px' }}>
+              <div className="panel" style={{ textAlign: 'center', padding: '24px', color: COLORS.textDim, fontSize: '12px' }}>
                 No completed matches yet
               </div>
             ) : (
@@ -243,14 +254,14 @@ export default function ArenaPage() {
 
         {/* Right sidebar: leaderboard */}
         <div>
-          <SectionHeader icon="▲" iconColor="#b5a642" title="TOP AGENTS" />
+          <SectionHeader icon="\u25B2" iconColor={COLORS.primary} title="TOP AGENTS" />
           <div className="panel" style={{ padding: '0' }}>
             {loading ? (
-              <div style={{ padding: '24px', textAlign: 'center', color: '#555', fontSize: '12px' }}>
+              <div style={{ padding: '24px', textAlign: 'center', color: COLORS.textDim, fontSize: '12px' }}>
                 Loading...
               </div>
             ) : agents.length === 0 ? (
-              <div style={{ padding: '24px', textAlign: 'center', color: '#555', fontSize: '12px' }}>
+              <div style={{ padding: '24px', textAlign: 'center', color: COLORS.textDim, fontSize: '12px' }}>
                 No agents registered
               </div>
             ) : (
@@ -277,8 +288,8 @@ function StatusPulse({ label, color }: { label: string; color: string }) {
         animation: 'pulse-dot 2s infinite',
       }} />
       <span style={{
-        fontSize: '9px', color: '#666',
-        fontFamily: '"Press Start 2P", monospace',
+        fontSize: '9px', color: COLORS.textDim,
+        fontFamily: FONTS.mono,
         letterSpacing: '0.1em',
       }}>{label}</span>
       <style>{`
@@ -300,15 +311,15 @@ function GaugeCard({ label, value, accent }: { label: string; value: number; acc
       <div style={{
         fontSize: '28px', fontWeight: 'bold',
         color: accent,
-        fontFamily: '"Space Mono", monospace',
+        fontFamily: FONTS.mono,
         textShadow: `0 0 20px ${accent}33`,
         lineHeight: 1,
       }}>
         {value}
       </div>
       <div style={{
-        fontSize: '8px', color: '#666', marginTop: '8px',
-        fontFamily: '"Press Start 2P", monospace',
+        fontSize: '8px', color: COLORS.textDim, marginTop: '8px',
+        fontFamily: FONTS.mono,
         letterSpacing: '0.15em',
       }}>
         {label}
@@ -341,41 +352,38 @@ function LiveMatchCard({
       <div className="panel" style={{
         display: 'grid', gridTemplateColumns: '1fr auto',
         alignItems: 'center', gap: '12px', cursor: 'pointer',
-        borderColor: 'rgba(74, 222, 128, 0.3)',
-        background: 'linear-gradient(135deg, rgba(74, 222, 128, 0.03), transparent)',
+        borderColor: `${COLORS.green}4d`,
+        background: `linear-gradient(135deg, ${COLORS.greenGlow.replace('0.3', '0.03')}, transparent)`,
       }}>
         <div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '6px' }}>
             <span style={{
               fontSize: '8px', padding: '2px 8px',
-              background: 'rgba(74, 222, 128, 0.15)',
-              color: '#4ade80',
+              background: STATUS_STYLES.live.bg,
+              color: STATUS_STYLES.live.color,
               borderRadius: '2px',
-              fontFamily: '"Press Start 2P", monospace',
+              fontFamily: FONTS.mono,
               letterSpacing: '0.1em',
-            }}>LIVE</span>
-            <span style={{ fontSize: '11px', color: '#888' }}>
-              MarioKart 64
-            </span>
+            }}>{MATCH_LABELS.in_progress}</span>
           </div>
           <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
             {match.agents.map((a, i) => (
               <span key={a} style={{
                 fontSize: '12px', fontWeight: 'bold',
-                color: ['#B8860B', '#B87333', '#4ade80', '#60a5fa'][i % 4],
+                color: COLORS.agents[i % COLORS.agents.length],
               }}>
                 {agentName(a)}
-                {i < match.agents.length - 1 && <span style={{ color: '#444', margin: '0 4px' }}>vs</span>}
+                {i < match.agents.length - 1 && <span style={{ color: COLORS.textDim, margin: '0 4px' }}>vs</span>}
               </span>
             ))}
           </div>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: '11px', color: '#4ade80' }}>
-            {match.started_at ? timeSince(match.started_at) : '—'}
+          <div style={{ fontSize: '11px', color: COLORS.green }}>
+            {match.started_at ? timeSince(match.started_at) : '\u2014'}
           </div>
-          <div style={{ fontSize: '10px', color: '#555', marginTop: '2px' }}>
-            WATCH →
+          <div style={{ fontSize: '10px', color: COLORS.textDim, marginTop: '2px' }}>
+            WATCH &rarr;
           </div>
         </div>
       </div>
@@ -394,24 +402,24 @@ function PendingMatchCard({
     <div className="panel" style={{
       display: 'grid', gridTemplateColumns: '1fr auto',
       alignItems: 'center', gap: '12px',
-      borderColor: 'rgba(96, 165, 250, 0.2)',
+      borderColor: `${COLORS.blue}33`,
       opacity: 0.8,
     }}>
       <div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '4px' }}>
           <span style={{
             fontSize: '8px', padding: '2px 8px',
-            background: 'rgba(96, 165, 250, 0.12)',
-            color: '#60a5fa',
+            background: STATUS_STYLES.pending.bg,
+            color: STATUS_STYLES.pending.color,
             borderRadius: '2px',
-            fontFamily: '"Press Start 2P", monospace',
+            fontFamily: FONTS.mono,
           }}>PENDING</span>
         </div>
-        <div style={{ fontSize: '12px', color: '#888' }}>
+        <div style={{ fontSize: '12px', color: COLORS.textMuted }}>
           {match.agents.map(a => agentName(a)).join(' vs ')}
         </div>
       </div>
-      <div style={{ fontSize: '11px', color: '#555' }}>
+      <div style={{ fontSize: '11px', color: COLORS.textDim }}>
         {timeSince(match.created_at)}
       </div>
     </div>
@@ -431,26 +439,26 @@ function RecentMatchCard({
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
           <span style={{
             fontSize: '8px', padding: '2px 6px',
-            background: 'rgba(184, 115, 51, 0.12)',
-            color: '#b87333',
+            background: STATUS_STYLES.settled.bg,
+            color: STATUS_STYLES.settled.color,
             borderRadius: '2px',
-            fontFamily: '"Press Start 2P", monospace',
+            fontFamily: FONTS.mono,
           }}>SETTLED</span>
-          <span style={{ fontSize: '10px', color: '#555' }}>
-            {match.ended_at ? timeSince(match.ended_at) : '—'}
+          <span style={{ fontSize: '10px', color: COLORS.textDim }}>
+            {match.ended_at ? timeSince(match.ended_at) : '\u2014'}
           </span>
         </div>
-        <div style={{ fontSize: '11px', color: '#888', marginBottom: '4px' }}>
+        <div style={{ fontSize: '11px', color: COLORS.textMuted, marginBottom: '4px' }}>
           {match.agents.map(a => agentName(a)).join(' vs ')}
         </div>
         {match.winner && (
           <div style={{ fontSize: '11px' }}>
-            <span style={{ color: '#555' }}>Winner: </span>
-            <span style={{ color: '#b5a642', fontWeight: 'bold' }}>{agentName(match.winner)}</span>
+            <span style={{ color: COLORS.textDim }}>Winner: </span>
+            <span style={{ color: COLORS.primary, fontWeight: 'bold' }}>{agentName(match.winner)}</span>
           </div>
         )}
         {match.hcs_message_id && (
-          <div style={{ fontSize: '9px', color: '#444', marginTop: '4px', fontFamily: 'monospace' }}>
+          <div style={{ fontSize: '9px', color: COLORS.textDim, marginTop: '4px', fontFamily: FONTS.mono }}>
             HCS #{match.hcs_message_id}
           </div>
         )}
@@ -469,32 +477,32 @@ function AgentRow({ agent, rank }: { agent: AgentEntry; rank: number }) {
       display: 'grid', gridTemplateColumns: '28px 1fr 60px',
       alignItems: 'center', gap: '10px',
       padding: '12px 14px',
-      borderBottom: '1px solid #2a2a2a',
+      borderBottom: `1px solid ${COLORS.borderSubtle}`,
     }}>
       <div style={{
         fontSize: '11px', fontWeight: 'bold',
-        color: rank <= 3 ? '#b5a642' : '#555',
-        fontFamily: '"Press Start 2P", monospace',
+        color: rank <= 3 ? COLORS.primary : COLORS.textDim,
+        fontFamily: FONTS.mono,
       }}>
         {rank}
       </div>
       <div>
-        <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#e8dcc8' }}>
+        <div style={{ fontSize: '12px', fontWeight: 'bold', color: COLORS.text }}>
           {agent.name}
         </div>
-        <div style={{ fontSize: '10px', color: '#555' }}>
-          {agent.model_name} · {agent.matches_played} games
+        <div style={{ fontSize: '10px', color: COLORS.textDim }}>
+          {agent.model_name} &middot; {agent.matches_played} games
         </div>
       </div>
       <div style={{ textAlign: 'right' }}>
         <div style={{
           fontSize: '14px', fontWeight: 'bold',
-          color: '#b5a642',
-          fontFamily: '"Space Mono", monospace',
+          color: COLORS.primary,
+          fontFamily: FONTS.mono,
         }}>
           {agent.elo}
         </div>
-        <div style={{ fontSize: '9px', color: winRate > 50 ? '#4ade80' : '#666' }}>
+        <div style={{ fontSize: '9px', color: winRate > 50 ? COLORS.green : COLORS.textDim }}>
           {winRate}% W
         </div>
       </div>

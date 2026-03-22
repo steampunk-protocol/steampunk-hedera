@@ -50,7 +50,7 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
           width: '28px',
           height: '28px',
           borderRadius: '50%',
-          background: 'linear-gradient(135deg, #b5a642, #9a8a30)',
+          background: 'linear-gradient(135deg, #c4952a, #8b6914)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -58,7 +58,7 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
           flexShrink: 0,
           marginRight: '8px',
           marginTop: '2px',
-          boxShadow: '0 0 8px rgba(181, 166, 66, 0.3)',
+          boxShadow: '0 0 8px rgba(196, 149, 42, 0.3)',
         }}>
           &#x2699;
         </div>
@@ -69,12 +69,12 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
         borderRadius: isUser ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
         background: isUser
           ? 'linear-gradient(135deg, #3a3520, #2a2510)'
-          : '#1e1e22',
+          : '#1a1a22',
         border: isUser
-          ? '1px solid rgba(181, 166, 66, 0.3)'
-          : '1px solid rgba(181, 166, 66, 0.15)',
+          ? '1px solid rgba(196, 149, 42, 0.3)'
+          : '1px solid rgba(196, 149, 42, 0.15)',
         boxShadow: isUser
-          ? '0 0 6px rgba(181, 166, 66, 0.1)'
+          ? '0 0 6px rgba(196, 149, 42, 0.1)'
           : '0 0 4px rgba(0, 0, 0, 0.3)',
       }}>
         <p style={{
@@ -117,13 +117,13 @@ function ThinkingIndicator() {
         width: '28px',
         height: '28px',
         borderRadius: '50%',
-        background: 'linear-gradient(135deg, #b5a642, #9a8a30)',
+        background: 'linear-gradient(135deg, #c4952a, #8b6914)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         fontSize: '14px',
         animation: 'spin 3s linear infinite',
-        boxShadow: '0 0 8px rgba(181, 166, 66, 0.3)',
+        boxShadow: '0 0 8px rgba(196, 149, 42, 0.3)',
       }}>
         &#x2699;
       </div>
@@ -184,24 +184,24 @@ export function ChatPanel({ asPanel = true, defaultCollapsed = true }: ChatPanel
           width: '56px',
           height: '56px',
           borderRadius: '50%',
-          background: 'linear-gradient(135deg, #b5a642, #9a8a30)',
-          border: '2px solid rgba(181, 166, 66, 0.5)',
+          background: 'linear-gradient(135deg, #c4952a, #8b6914)',
+          border: '2px solid rgba(196, 149, 42, 0.5)',
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           fontSize: '24px',
-          boxShadow: '0 4px 20px rgba(181, 166, 66, 0.3), 0 0 40px rgba(181, 166, 66, 0.1)',
+          boxShadow: '0 4px 20px rgba(196, 149, 42, 0.3), 0 0 40px rgba(196, 149, 42, 0.1)',
           zIndex: 1000,
           transition: 'all 0.2s',
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.transform = 'scale(1.1)'
-          e.currentTarget.style.boxShadow = '0 4px 24px rgba(181, 166, 66, 0.5), 0 0 60px rgba(181, 166, 66, 0.15)'
+          e.currentTarget.style.boxShadow = '0 4px 24px rgba(196, 149, 42, 0.5), 0 0 60px rgba(196, 149, 42, 0.15)'
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.transform = 'scale(1)'
-          e.currentTarget.style.boxShadow = '0 4px 20px rgba(181, 166, 66, 0.3), 0 0 40px rgba(181, 166, 66, 0.1)'
+          e.currentTarget.style.boxShadow = '0 4px 20px rgba(196, 149, 42, 0.3), 0 0 40px rgba(196, 149, 42, 0.1)'
         }}
         title="Chat with Matchmaker Agent"
       >
@@ -222,9 +222,9 @@ export function ChatPanel({ asPanel = true, defaultCollapsed = true }: ChatPanel
         flexDirection: 'column',
         borderRadius: '8px',
         overflow: 'hidden',
-        border: '1px solid rgba(181, 166, 66, 0.3)',
-        background: '#1a1a1e',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), 0 0 20px rgba(181, 166, 66, 0.08)',
+        border: '1px solid rgba(196, 149, 42, 0.3)',
+        background: '#1a1a22',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), 0 0 20px rgba(196, 149, 42, 0.08)',
       }
     : {
         width: '100%',
@@ -233,8 +233,8 @@ export function ChatPanel({ asPanel = true, defaultCollapsed = true }: ChatPanel
         flexDirection: 'column',
         borderRadius: '8px',
         overflow: 'hidden',
-        border: '1px solid rgba(181, 166, 66, 0.3)',
-        background: '#1a1a1e',
+        border: '1px solid rgba(196, 149, 42, 0.3)',
+        background: '#1a1a22',
       }
 
   return (
@@ -242,8 +242,8 @@ export function ChatPanel({ asPanel = true, defaultCollapsed = true }: ChatPanel
       {/* Header */}
       <div style={{
         padding: '12px 16px',
-        background: 'linear-gradient(135deg, #1e1e22, #252528)',
-        borderBottom: '1px solid rgba(181, 166, 66, 0.2)',
+        background: 'linear-gradient(135deg, #1a1a22, #252528)',
+        borderBottom: '1px solid rgba(196, 149, 42, 0.2)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -254,14 +254,14 @@ export function ChatPanel({ asPanel = true, defaultCollapsed = true }: ChatPanel
             width: '8px',
             height: '8px',
             borderRadius: '50%',
-            background: '#39ff14',
-            boxShadow: '0 0 6px rgba(57, 255, 20, 0.4)',
+            background: '#22c55e',
+            boxShadow: '0 0 6px rgba(34, 197, 94, 0.4)',
           }} />
           <div>
             <div style={{
               fontFamily: '"Press Start 2P", monospace',
               fontSize: '8px',
-              color: '#b5a642',
+              color: '#c4952a',
               letterSpacing: '0.1em',
             }}>
               MATCHMAKER AGENT
@@ -331,7 +331,7 @@ export function ChatPanel({ asPanel = true, defaultCollapsed = true }: ChatPanel
             <div style={{
               fontSize: '32px',
               marginBottom: '12px',
-              color: '#b5a642',
+              color: '#c4952a',
               opacity: 0.5,
             }}>
               &#x2699;
@@ -339,7 +339,7 @@ export function ChatPanel({ asPanel = true, defaultCollapsed = true }: ChatPanel
             <p style={{
               fontFamily: '"Press Start 2P", monospace',
               fontSize: '9px',
-              color: '#b5a642',
+              color: '#c4952a',
               marginBottom: '8px',
               letterSpacing: '0.05em',
             }}>
@@ -370,8 +370,8 @@ export function ChatPanel({ asPanel = true, defaultCollapsed = true }: ChatPanel
       {showCommands && (
         <div style={{
           padding: '8px 12px',
-          borderTop: '1px solid rgba(181, 166, 66, 0.1)',
-          background: '#1e1e22',
+          borderTop: '1px solid rgba(196, 149, 42, 0.1)',
+          background: '#1a1a22',
           display: 'flex',
           flexWrap: 'wrap',
           gap: '6px',
@@ -381,23 +381,23 @@ export function ChatPanel({ asPanel = true, defaultCollapsed = true }: ChatPanel
               key={cmd}
               onClick={() => handleQuickCommand(cmd)}
               style={{
-                background: 'rgba(181, 166, 66, 0.08)',
-                border: '1px solid rgba(181, 166, 66, 0.2)',
+                background: 'rgba(196, 149, 42, 0.08)',
+                border: '1px solid rgba(196, 149, 42, 0.2)',
                 borderRadius: '12px',
                 padding: '4px 10px',
-                color: '#b5a642',
+                color: '#c4952a',
                 fontSize: '10px',
                 fontFamily: '"Space Mono", monospace',
                 cursor: 'pointer',
                 transition: 'all 0.15s',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(181, 166, 66, 0.15)'
-                e.currentTarget.style.borderColor = 'rgba(181, 166, 66, 0.4)'
+                e.currentTarget.style.background = 'rgba(196, 149, 42, 0.15)'
+                e.currentTarget.style.borderColor = 'rgba(196, 149, 42, 0.4)'
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(181, 166, 66, 0.08)'
-                e.currentTarget.style.borderColor = 'rgba(181, 166, 66, 0.2)'
+                e.currentTarget.style.background = 'rgba(196, 149, 42, 0.08)'
+                e.currentTarget.style.borderColor = 'rgba(196, 149, 42, 0.2)'
               }}
             >
               {cmd}
@@ -425,8 +425,8 @@ export function ChatPanel({ asPanel = true, defaultCollapsed = true }: ChatPanel
         onSubmit={handleSubmit}
         style={{
           padding: '12px',
-          borderTop: '1px solid rgba(181, 166, 66, 0.15)',
-          background: '#1e1e22',
+          borderTop: '1px solid rgba(196, 149, 42, 0.15)',
+          background: '#1a1a22',
           display: 'flex',
           gap: '8px',
           alignItems: 'center',
@@ -438,11 +438,11 @@ export function ChatPanel({ asPanel = true, defaultCollapsed = true }: ChatPanel
           onClick={() => setShowCommands(prev => !prev)}
           style={{
             background: 'none',
-            border: '1px solid rgba(181, 166, 66, 0.2)',
+            border: '1px solid rgba(196, 149, 42, 0.2)',
             borderRadius: '50%',
             width: '30px',
             height: '30px',
-            color: showCommands ? '#b5a642' : '#666',
+            color: showCommands ? '#c4952a' : '#666',
             fontSize: '16px',
             cursor: 'pointer',
             flexShrink: 0,
@@ -465,8 +465,8 @@ export function ChatPanel({ asPanel = true, defaultCollapsed = true }: ChatPanel
           style={{
             flex: 1,
             padding: '10px 14px',
-            background: '#2a2a2e',
-            border: '1px solid rgba(181, 166, 66, 0.15)',
+            background: '#0f0f13',
+            border: '1px solid rgba(196, 149, 42, 0.15)',
             borderRadius: '6px',
             color: '#e8dcc8',
             fontSize: '13px',
@@ -475,10 +475,10 @@ export function ChatPanel({ asPanel = true, defaultCollapsed = true }: ChatPanel
             transition: 'border-color 0.15s',
           }}
           onFocus={(e) => {
-            e.currentTarget.style.borderColor = 'rgba(181, 166, 66, 0.4)'
+            e.currentTarget.style.borderColor = 'rgba(196, 149, 42, 0.4)'
           }}
           onBlur={(e) => {
-            e.currentTarget.style.borderColor = 'rgba(181, 166, 66, 0.15)'
+            e.currentTarget.style.borderColor = 'rgba(196, 149, 42, 0.15)'
           }}
         />
         <button
@@ -486,18 +486,18 @@ export function ChatPanel({ asPanel = true, defaultCollapsed = true }: ChatPanel
           disabled={sending || !input.trim()}
           style={{
             background: input.trim()
-              ? 'linear-gradient(135deg, #b5a642, #9a8a30)'
+              ? 'linear-gradient(135deg, #c4952a, #8b6914)'
               : '#333',
             border: 'none',
             borderRadius: '6px',
             padding: '10px 14px',
-            color: input.trim() ? '#1a1a1e' : '#666',
+            color: input.trim() ? '#1a1a22' : '#666',
             fontSize: '13px',
             fontWeight: 'bold',
             cursor: input.trim() ? 'pointer' : 'default',
             flexShrink: 0,
             transition: 'all 0.15s',
-            boxShadow: input.trim() ? '0 2px 8px rgba(181, 166, 66, 0.2)' : 'none',
+            boxShadow: input.trim() ? '0 2px 8px rgba(196, 149, 42, 0.2)' : 'none',
           }}
         >
           {sending ? '...' : '\u2191'}

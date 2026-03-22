@@ -14,7 +14,7 @@ export default function ChatPage() {
     }}>
       <div style={{ marginBottom: '16px' }}>
         <h1 style={{
-          color: '#b5a642',
+          color: '#c4952a',
           fontSize: '1rem',
           marginBottom: '6px',
         }}>

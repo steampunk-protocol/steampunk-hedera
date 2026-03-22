@@ -3,7 +3,7 @@
 import { useMemo } from 'react'
 import type { PlayerState } from '@/types/ws'
 
-const AGENT_COLORS = ['#B8860B', '#B87333', '#4ade80', '#60a5fa']
+const AGENT_COLORS = ['#dc2626', '#3b82f6', '#22c55e', '#f59e0b']
 const AGENT_NAMES = ['P1', 'P2', 'P3', 'P4']
 
 const W = 520
@@ -46,7 +46,7 @@ export function TrackMinimap({ players }: Props) {
         {leader && raceActive && (
           <div style={{ display: 'flex', gap: '16px' }}>
             <span style={{ fontSize: '10px', color: '#666' }}>
-              LAP <span style={{ color: '#b5a642', fontWeight: 'bold' }}>{leader.lap}/{leader.total_laps}</span>
+              LAP <span style={{ color: '#c4952a', fontWeight: 'bold' }}>{leader.lap}/{leader.total_laps}</span>
             </span>
             <span style={{ fontSize: '10px', color: '#666' }}>
               LEAD <span style={{ color: AGENT_COLORS[0], fontWeight: 'bold' }}>
@@ -66,11 +66,11 @@ export function TrackMinimap({ players }: Props) {
         {/* Background grid lines */}
         {Array.from({ length: 13 }).map((_, i) => (
           <line key={`vg${i}`} x1={i * 40 + 20} y1={0} x2={i * 40 + 20} y2={H}
-            stroke="rgba(181, 166, 66, 0.03)" strokeWidth={1} />
+            stroke="rgba(196, 149, 42, 0.03)" strokeWidth={1} />
         ))}
         {Array.from({ length: 7 }).map((_, i) => (
           <line key={`hg${i}`} x1={0} y1={i * 40 + 10} x2={W} y2={i * 40 + 10}
-            stroke="rgba(181, 166, 66, 0.03)" strokeWidth={1} />
+            stroke="rgba(196, 149, 42, 0.03)" strokeWidth={1} />
         ))}
 
         {/* Track surface (wide road) */}
@@ -81,29 +81,29 @@ export function TrackMinimap({ players }: Props) {
 
         {/* Track center line (dashed) */}
         <ellipse cx={CX} cy={CY} rx={RX} ry={RY}
-          fill="none" stroke="rgba(181, 166, 66, 0.08)" strokeWidth={1}
+          fill="none" stroke="rgba(196, 149, 42, 0.08)" strokeWidth={1}
           strokeDasharray="6 8" />
 
         {/* Track edge lines */}
         <ellipse cx={CX} cy={CY} rx={RX + 16} ry={RY + 16}
-          fill="none" stroke="rgba(181, 166, 66, 0.12)" strokeWidth={1} />
+          fill="none" stroke="rgba(196, 149, 42, 0.12)" strokeWidth={1} />
         <ellipse cx={CX} cy={CY} rx={RX - 16} ry={RY - 16}
-          fill="none" stroke="rgba(181, 166, 66, 0.08)" strokeWidth={1} />
+          fill="none" stroke="rgba(196, 149, 42, 0.08)" strokeWidth={1} />
 
         {/* Start/finish line */}
         <line
           x1={CX - 1} y1={CY - RY - 18} x2={CX - 1} y2={CY - RY + 18}
-          stroke="rgba(181, 166, 66, 0.4)" strokeWidth={3} />
+          stroke="rgba(196, 149, 42, 0.4)" strokeWidth={3} />
         <line
           x1={CX + 2} y1={CY - RY - 18} x2={CX + 2} y2={CY - RY + 18}
-          stroke="rgba(181, 166, 66, 0.2)" strokeWidth={1} />
+          stroke="rgba(196, 149, 42, 0.2)" strokeWidth={1} />
 
         {/* Quarter markers */}
         {[0.25, 0.5, 0.75].map(f => {
           const p = trackXY(f)
           return (
             <circle key={f} cx={p.x} cy={p.y} r={2}
-              fill="rgba(181, 166, 66, 0.15)" />
+              fill="rgba(196, 149, 42, 0.15)" />
           )
         })}
 
@@ -158,7 +158,7 @@ export function TrackMinimap({ players }: Props) {
               {/* Position number */}
               <text x={pos.x} y={pos.y + 3.5}
                 textAnchor="middle" fontSize={10}
-                fill="#1a1a1e" fontWeight="bold"
+                fill="#1a1a22" fontWeight="bold"
                 fontFamily="'Press Start 2P', monospace"
               >
                 {player.position}
@@ -180,7 +180,7 @@ export function TrackMinimap({ players }: Props) {
         {/* "START" label */}
         <text x={CX} y={CY - RY - 24}
           textAnchor="middle" fontSize={7}
-          fill="rgba(181, 166, 66, 0.3)"
+          fill="rgba(196, 149, 42, 0.3)"
           fontFamily="'Press Start 2P', monospace"
           letterSpacing="0.15em"
         >

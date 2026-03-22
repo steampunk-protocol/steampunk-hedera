@@ -14,8 +14,8 @@ const AGENT_NAMES: Record<string, string> = {
 type MessageType = 'all' | 'queue_join' | 'match_found' | 'match_result' | 'chat' | 'connection_request' | 'connection_created' | 'message' | 'other'
 
 const MESSAGE_TYPE_COLORS: Record<string, { bg: string; color: string }> = {
-  queue_join: { bg: '#1a2e1a', color: '#4ade80' },
-  match_found: { bg: '#2e2a1a', color: '#B8860B' },
+  queue_join: { bg: '#1a2e1a', color: '#22c55e' },
+  match_found: { bg: '#2e2a1a', color: '#c4952a' },
   match_result: { bg: '#2e1a1a', color: '#ef4444' },
   chat: { bg: '#1a1a2e', color: '#60a5fa' },
   connection_request: { bg: '#2e1a2e', color: '#c084fc' },
@@ -82,7 +82,7 @@ export default function FeedPage() {
 
   return (
     <main style={{ padding: '40px', maxWidth: '900px', margin: '0 auto' }}>
-      <h1 style={{ color: '#b5a642', marginBottom: '8px', fontSize: '1rem' }}>
+      <h1 style={{ color: '#c4952a', marginBottom: '8px', fontSize: '1rem' }}>
         HCS MATCH FEED
       </h1>
       <p style={{ color: '#666', fontSize: '13px', marginBottom: '4px' }}>
@@ -95,7 +95,7 @@ export default function FeedPage() {
             href={`https://hashscan.io/testnet/topic/${TOPIC_ID}`}
             target="_blank"
             rel="noopener noreferrer"
-            style={{ color: '#B87333' }}
+            style={{ color: '#8b6914' }}
           >
             {TOPIC_ID}
           </a>
@@ -103,8 +103,8 @@ export default function FeedPage() {
       )}
 
       {!TOPIC_ID && (
-        <div className="panel" style={{ marginBottom: '16px', borderColor: '#B87333' }}>
-          <p style={{ color: '#B87333', fontSize: '12px' }}>
+        <div className="panel" style={{ marginBottom: '16px', borderColor: '#8b6914' }}>
+          <p style={{ color: '#8b6914', fontSize: '12px' }}>
             Set NEXT_PUBLIC_HCS_MATCH_TOPIC_ID in .env.local to connect to the match feed topic.
           </p>
         </div>
@@ -120,7 +120,7 @@ export default function FeedPage() {
         {FILTER_OPTIONS.map((opt) => {
           const isActive = activeFilter === opt.value
           const typeColor = opt.value === 'all'
-            ? { bg: '#2a2a2e', color: '#b5a642' }
+            ? { bg: '#0f0f13', color: '#c4952a' }
             : MESSAGE_TYPE_COLORS[opt.value] || MESSAGE_TYPE_COLORS.other
           return (
             <button
@@ -210,7 +210,7 @@ export default function FeedPage() {
                   {(originAgent || agentName) && (
                     <span style={{
                       fontSize: '11px',
-                      color: '#B87333',
+                      color: '#8b6914',
                       fontWeight: 'bold',
                     }}>
                       {originAgent || agentName}
@@ -229,7 +229,7 @@ export default function FeedPage() {
                     rel="noopener noreferrer"
                     style={{
                       fontSize: '9px',
-                      color: '#B87333',
+                      color: '#8b6914',
                       textDecoration: 'none',
                       border: '1px solid #333',
                       padding: '1px 6px',
@@ -237,7 +237,7 @@ export default function FeedPage() {
                       fontFamily: 'monospace',
                       transition: 'border-color 0.15s',
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#B87333')}
+                    onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#8b6914')}
                     onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#333')}
                   >
                     HashScan
@@ -260,7 +260,7 @@ export default function FeedPage() {
                     href={`https://hashscan.io/testnet/topic/${originTopic}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    style={{ color: '#B87333', textDecoration: 'none' }}
+                    style={{ color: '#8b6914', textDecoration: 'none' }}
                   >
                     {originAgent ? `${originAgent} (${originTopic})` : originTopic}
                   </a>

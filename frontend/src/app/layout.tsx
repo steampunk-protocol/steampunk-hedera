@@ -6,8 +6,8 @@ import { ChatPanel } from '@/components/chat/ChatPanel'
 import Link from 'next/link'
 
 export const metadata: Metadata = {
-  title: 'STEAM ARCADE — AI Agent Battle Arena on Hedera',
-  description: 'Watch AI agents compete in Mario Kart 64. Bet on the winner. Powered by Hedera.',
+  title: 'STEAMPUNK — AI Agent Battle Arena on Hedera',
+  description: 'Watch AI agents compete in retro games. Bet on the winner. Powered by Hedera.',
   icons: {
     icon: '/favicon.ico',
     apple: '/apple-touch-icon.png',
@@ -21,30 +21,31 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="gear-bg" style={{ background: '#2a2a2e', color: '#e8dcc8' }}>
+      <body className="gear-bg" style={{ background: '#0f0f13', color: '#e8dcc8' }}>
         <Web3Provider>
           <nav style={{
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
             padding: '14px 28px',
-            borderBottom: '1px solid rgba(181, 166, 66, 0.3)',
-            background: 'rgba(26, 26, 30, 0.8)',
+            borderBottom: '1px solid rgba(196, 149, 42, 0.12)',
+            background: 'rgba(15, 15, 19, 0.9)',
             backdropFilter: 'blur(8px)',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
               <Link href="/" style={{
-                color: '#b5a642',
+                color: '#c4952a',
                 textDecoration: 'none',
-                fontFamily: '"Press Start 2P", monospace',
-                fontSize: '12px',
-                textShadow: '0 0 10px rgba(181, 166, 66, 0.5)',
+                fontFamily: '"Cinzel", serif',
+                fontSize: '14px',
+                textShadow: '0 0 12px rgba(196, 149, 42, 0.4)',
                 letterSpacing: '0.05em',
+                fontWeight: 'bold',
               }}>
-                STEAM ARCADE
+                STEAMPUNK
               </Link>
               <Link href="/arena" style={{
-                color: '#888',
+                color: '#888880',
                 textDecoration: 'none',
                 fontSize: '12px',
                 fontFamily: '"Space Mono", monospace',
@@ -53,7 +54,7 @@ export default function RootLayout({
                 Arena
               </Link>
               <Link href="/feed" style={{
-                color: '#888',
+                color: '#888880',
                 textDecoration: 'none',
                 fontSize: '12px',
                 fontFamily: '"Space Mono", monospace',
@@ -62,7 +63,7 @@ export default function RootLayout({
                 Feed
               </Link>
               <Link href="/leaderboard" style={{
-                color: '#888',
+                color: '#888880',
                 textDecoration: 'none',
                 fontSize: '12px',
                 fontFamily: '"Space Mono", monospace',
@@ -71,7 +72,7 @@ export default function RootLayout({
                 Leaderboard
               </Link>
               <Link href="/chat" style={{
-                color: '#b5a642',
+                color: '#c4952a',
                 textDecoration: 'none',
                 fontSize: '12px',
                 fontFamily: '"Space Mono", monospace',
@@ -83,9 +84,9 @@ export default function RootLayout({
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
               <span style={{
                 fontSize: '9px',
-                color: '#39ff14',
+                color: '#22c55e',
                 fontFamily: '"Press Start 2P", monospace',
-                textShadow: '0 0 6px rgba(57, 255, 20, 0.4)',
+                textShadow: '0 0 6px rgba(34, 197, 94, 0.4)',
               }}>
                 TESTNET
               </span>
