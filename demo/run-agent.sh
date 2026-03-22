@@ -115,15 +115,22 @@ ROUND=0
 while true; do
   ROUND=$((ROUND + 1))
 
-  # Read game state
+  # Read game state (try live state first, fall back to match status)
   STATE=$(curl -sf "$ARENA/matches/$MATCH_ID/state" 2>/dev/null)
-  if [ -z "$STATE" ]; then
-    echo -e "${R}[${AGENT_NAME}] No state — match may have ended${NC}"
-    break
+  if [ -z "$STATE" ] || echo "$STATE" | grep -q "detail"; then
+    # Emulator may have finished — check match status from DB
+    DB_STATUS=$(curl -sf "$ARENA/agents/matches/$MATCH_ID" 2>/dev/null | python3 -c 'import sys,json; print(json.load(sys.stdin).get("status",""))' 2>/dev/null)
+    if [ "$DB_STATUS" = "settled" ] || [ "$DB_STATUS" = "finished" ]; then
+      echo -e "${G}[${AGENT_NAME}] Race finished! (settled on-chain)${NC}"
+      break
+    fi
+    echo -e "${Y}[${AGENT_NAME}] Waiting for game state...${NC}"
+    sleep 3
+    continue
   fi
 
   RACE_STATUS=$(echo "$STATE" | python3 -c 'import sys,json; print(json.load(sys.stdin).get("race_status",""))' 2>/dev/null)
-  if [ "$RACE_STATUS" = "finished" ] || [ -z "$RACE_STATUS" ]; then
+  if [ "$RACE_STATUS" = "finished" ]; then
     echo -e "${G}[${AGENT_NAME}] Race finished!${NC}"
     break
   fi
@@ -196,17 +203,34 @@ else:
 done
 
 # --- Final result ---
+sleep 2
 echo ""
-echo -e "${C}[${AGENT_NAME}] Match result:${NC}"
-FINAL=$(curl -sf "$ARENA/agents/matches/$MATCH_ID" 2>/dev/null)
-WINNER=$(echo "$FINAL" | python3 -c 'import sys,json; print(json.load(sys.stdin).get("winner","none"))' 2>/dev/null)
-MY_WINNER=$([ "$WINNER" = "$AGENT_ADDR" ] || [ "$(echo $WINNER | tr 'A-Z' 'a-z')" = "$(echo $AGENT_ADDR | tr 'A-Z' 'a-z')" ])
+echo -e "${C}╔══════════════════════════════════════════╗${NC}"
+echo -e "${C}║            MATCH COMPLETE                ║${NC}"
+echo -e "${C}╚══════════════════════════════════════════╝${NC}"
+echo ""
 
-if echo "$WINNER" | grep -qi "$(echo $AGENT_ADDR | tail -c 10)"; then
-  echo -e "  ${G}🏆 ${AGENT_NAME} WINS!${NC}"
+FINAL=$(curl -sf "$ARENA/agents/matches/$MATCH_ID" 2>/dev/null)
+WINNER=$(echo "$FINAL" | python3 -c 'import sys,json; print(json.load(sys.stdin).get("winner",""))' 2>/dev/null)
+HCS_MSG=$(echo "$FINAL" | python3 -c 'import sys,json; print(json.load(sys.stdin).get("hcs_message_id",""))' 2>/dev/null)
+MATCH_STATUS=$(echo "$FINAL" | python3 -c 'import sys,json; print(json.load(sys.stdin).get("status",""))' 2>/dev/null)
+
+echo -e "  Status:  ${G}${MATCH_STATUS}${NC}"
+
+WINNER_LOWER=$(echo "$WINNER" | tr 'A-Z' 'a-z')
+AGENT_LOWER=$(echo "$AGENT_ADDR" | tr 'A-Z' 'a-z')
+
+if [ "$WINNER_LOWER" = "$AGENT_LOWER" ]; then
+  echo -e "  Result:  ${G}🏆 ${AGENT_NAME} WINS!${NC}"
 else
-  echo -e "  ${Y}${AGENT_NAME} finished. Winner: $(echo $WINNER | head -c 12)...${NC}"
+  echo -e "  Result:  ${Y}${AGENT_NAME} lost${NC}"
+  echo -e "  Winner:  ${WINNER:-unknown}"
 fi
 
+if [ -n "$HCS_MSG" ]; then
+  echo -e "  HCS Seq: ${B}#${HCS_MSG}${NC} (on-chain proof)"
+fi
+
+echo -e "  Match:   ${MATCH_ID}"
 echo ""
 echo -e "${C}[${AGENT_NAME}] Session complete.${NC}"
