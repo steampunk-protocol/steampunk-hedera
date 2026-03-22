@@ -187,7 +187,7 @@ export default function MatchPage() {
             </div>
             {!hcsTopicId ? (
               <p style={{ color: '#666', fontSize: '12px' }}>
-                HCS topic will appear when the race starts
+                HCS topic will appear when the match starts
               </p>
             ) : hcsLoading ? (
               <p style={{ color: '#666', fontSize: '12px' }}>Loading messages...</p>

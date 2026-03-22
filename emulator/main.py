@@ -316,7 +316,7 @@ class EmulatorService:
             logger.info(f"SF2 env reset complete")
 
             tick = 0
-            frame_interval = 3  # send frame every 3rd tick (~20fps)
+            frame_interval = 6  # send frame every 6th tick (~10fps, reduces WS bandwidth)
 
             while self._running:
                 tick += 1
@@ -377,15 +377,17 @@ class EmulatorService:
                         except Exception:
                             pass
 
-                tick_msg = EmulatorTickMessage(
-                    match_id=cmd.match_id,
-                    tick=tick,
-                    race_status="finished" if done else "in_progress",
-                    players=players,
-                    timestamp_ms=int(time.time() * 1000),
-                    frame_b64=frame_b64,
-                )
-                await ws.send(tick_msg.to_json())
+                # Only send tick messages every 3rd frame to reduce WS load
+                if tick % 3 == 0 or done or frame_b64:
+                    tick_msg = EmulatorTickMessage(
+                        match_id=cmd.match_id,
+                        tick=tick,
+                        race_status="finished" if done else "in_progress",
+                        players=players,
+                        timestamp_ms=int(time.time() * 1000),
+                        frame_b64=frame_b64,
+                    )
+                    await ws.send(tick_msg.to_json())
 
                 if done:
                     break
