@@ -10,14 +10,32 @@ import { BettingPanel } from '@/components/betting/BettingPanel'
 import { RaceTimer } from '@/components/race/RaceTimer'
 import { FightViewer } from '@/components/fight/FightViewer'
 import { COLORS, FONTS, MATCH_LABELS } from '@/config/theme'
-import { ARENA_API } from '@/config/arena'
+import { ARENA_API, HCS_MATCH_RESULTS_TOPIC } from '@/config/arena'
+
+const MIRROR_NODE = 'https://testnet.mirrornode.hedera.com/api/v1'
+const PREDICTION_POOL = '0xdCC851392396269953082b394B689bfEB8E13FD5'
+
+interface PoolTx {
+  hash: string
+  from: string
+  timestamp: string
+}
+
+interface AgentDetail {
+  address: string
+  name: string
+}
 
 interface MatchData {
   match_id: string
   status: string
   agents: string[]
+  agent_details?: AgentDetail[]
   winner: string | null
+  winner_name: string | null
   hcs_message_id: string | null
+  on_chain_tx: string | null
+  match_result_hash: string | null
   created_at: number
   ended_at: number | null
 }
@@ -36,7 +54,33 @@ export default function MatchPage() {
       .catch(() => {})
   }, [matchId])
 
-  const hcsTopicId = raceState?.hcs_match_topic_id ?? ''
+  // Fetch PredictionPool transactions from mirror node
+  const [poolTxs, setPoolTxs] = useState<PoolTx[]>([])
+  useEffect(() => {
+    if (!matchData || matchData.status !== 'settled') return
+    fetch(`${MIRROR_NODE}/contracts/${PREDICTION_POOL}/results?limit=25&order=desc`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data?.results) return
+        // Filter to txs around this match's timeframe (created_at to ended_at + 60s)
+        const start = (matchData.created_at / 1000) - 60
+        const end = ((matchData.ended_at ?? matchData.created_at) / 1000) + 120
+        const filtered = data.results
+          .filter((r: any) => {
+            const ts = parseFloat(r.timestamp || '0')
+            return ts >= start && ts <= end
+          })
+          .map((r: any) => ({
+            hash: r.hash ?? '',
+            from: r.from ?? '',
+            timestamp: r.timestamp ?? '',
+          }))
+        setPoolTxs(filtered)
+      })
+      .catch(() => {})
+  }, [matchData])
+
+  const hcsTopicId = raceState?.hcs_match_topic_id || HCS_MATCH_RESULTS_TOPIC
   const { messages: hcsMessages, loading: hcsLoading } = useHCSFeed(hcsTopicId)
 
   // Use WS state if available, fall back to REST data
@@ -128,7 +172,7 @@ export default function MatchPage() {
         }}>
           {matchData?.status === 'settled' || matchData?.status === 'finished' ? (
             /* Show settled match result */
-            <div>
+            <div style={{ maxWidth: '700px', margin: '0 auto' }}>
               <div style={{
                 padding: '24px', marginBottom: '16px',
                 background: `linear-gradient(135deg, ${COLORS.bgCard}, ${COLORS.bgSurface})`,
@@ -139,34 +183,138 @@ export default function MatchPage() {
                 <div style={{
                   fontSize: '10px', color: COLORS.primary,
                   textTransform: 'uppercase', letterSpacing: '4px',
-                  fontFamily: FONTS.heading, marginBottom: '8px',
+                  fontFamily: FONTS.heading, marginBottom: '12px',
                 }}>Match Complete</div>
-                <div style={{ fontSize: '13px', color: COLORS.textMuted, marginBottom: '12px' }}>
-                  {matchData.agents.map(a => a.slice(0, 10) + '…').join(' vs ')}
+
+                {/* Agent names + addresses */}
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', alignItems: 'center', marginBottom: '16px' }}>
+                  {(matchData.agent_details ?? matchData.agents.map(a => ({ address: a, name: a.slice(0, 10) }))).map((agent, i) => (
+                    <div key={agent.address} style={{ textAlign: 'center' }}>
+                      <div style={{
+                        fontSize: '14px', fontWeight: 'bold',
+                        color: COLORS.agents[i] ?? COLORS.text,
+                        fontFamily: FONTS.heading,
+                      }}>{agent.name}</div>
+                      <a
+                        href={`https://hashscan.io/testnet/account/${agent.address}`}
+                        target="_blank" rel="noopener noreferrer"
+                        style={{ fontSize: '9px', color: COLORS.textDim, fontFamily: FONTS.mono, textDecoration: 'none' }}
+                      >{agent.address.slice(0, 10)}...{agent.address.slice(-6)}</a>
+                    </div>
+                  ))}
                 </div>
+
                 {matchData.winner && (
                   <div>
                     <div style={{ fontSize: '10px', color: COLORS.textDim, marginBottom: '4px' }}>Winner</div>
                     <div style={{
                       fontSize: '18px', fontWeight: 'bold', color: COLORS.primary,
                       fontFamily: FONTS.heading,
-                    }}>{matchData.winner.slice(0, 12)}…</div>
-                  </div>
-                )}
-                {matchData.hcs_message_id && (
-                  <div style={{
-                    fontSize: '10px', color: COLORS.textDim, marginTop: '12px',
-                    fontFamily: FONTS.mono,
-                  }}>
-                    On-chain proof: HCS #{matchData.hcs_message_id}
+                    }}>{matchData.winner_name || matchData.winner.slice(0, 12)}</div>
+                    <a
+                      href={`https://hashscan.io/testnet/account/${matchData.winner}`}
+                      target="_blank" rel="noopener noreferrer"
+                      style={{ fontSize: '9px', color: COLORS.textDim, fontFamily: FONTS.mono, textDecoration: 'none' }}
+                    >{matchData.winner.slice(0, 10)}...{matchData.winner.slice(-6)}</a>
                   </div>
                 )}
                 {matchData.ended_at && (
-                  <div style={{ fontSize: '10px', color: COLORS.textDim, marginTop: '4px' }}>
+                  <div style={{ fontSize: '10px', color: COLORS.textDim, marginTop: '8px' }}>
                     Settled: {new Date(matchData.ended_at).toLocaleString()}
                   </div>
                 )}
               </div>
+
+              {/* Transaction Proof for settled matches */}
+              {(matchData.on_chain_tx || matchData.match_result_hash || matchData.hcs_message_id) && (
+                <div className="panel" style={{ background: COLORS.bgSurface, padding: '12px', marginBottom: '16px' }}>
+                  <div className="label" style={{ marginBottom: '8px', fontSize: '8px' }}>TRANSACTION PROOF</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {matchData.on_chain_tx && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '10px', color: COLORS.textDim }}>MatchProof Tx</span>
+                        <a href={`https://hashscan.io/testnet/transaction/${matchData.on_chain_tx}`}
+                          target="_blank" rel="noopener noreferrer"
+                          style={{ fontSize: '10px', color: COLORS.primary, fontFamily: FONTS.mono, textDecoration: 'none' }}
+                        >{matchData.on_chain_tx.slice(0, 10)}...</a>
+                      </div>
+                    )}
+                    {matchData.match_result_hash && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '10px', color: COLORS.textDim }}>Result Hash</span>
+                        <span style={{ fontSize: '10px', color: COLORS.text, fontFamily: FONTS.mono }}>{matchData.match_result_hash.slice(0, 10)}...</span>
+                      </div>
+                    )}
+                    {matchData.hcs_message_id && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '10px', color: COLORS.textDim }}>HCS Message</span>
+                        <a href={`https://hashscan.io/testnet/topic/${hcsTopicId}`}
+                          target="_blank" rel="noopener noreferrer"
+                          style={{ fontSize: '10px', color: COLORS.primary, fontFamily: FONTS.mono, textDecoration: 'none' }}
+                        >#{matchData.hcs_message_id}</a>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Betting Activity */}
+              {poolTxs.length > 0 && (
+                <div className="panel" style={{ background: COLORS.bgSurface, padding: '12px', marginBottom: '16px' }}>
+                  <div className="label" style={{ marginBottom: '8px', fontSize: '8px' }}>BETTING ACTIVITY</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    {poolTxs.map((tx) => (
+                      <div key={tx.hash} style={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        padding: '4px 0', borderBottom: `1px solid ${COLORS.borderSubtle}`,
+                      }}>
+                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                          <span style={{
+                            fontSize: '9px', color: COLORS.text, fontFamily: FONTS.mono,
+                            padding: '1px 4px', background: COLORS.bgCard, borderRadius: '2px',
+                          }}>BET</span>
+                          <span style={{ fontSize: '9px', color: COLORS.textDim, fontFamily: FONTS.mono }}>
+                            {tx.from.slice(0, 10)}...{tx.from.slice(-4)}
+                          </span>
+                        </div>
+                        <a
+                          href={`https://hashscan.io/testnet/transaction/${tx.hash}`}
+                          target="_blank" rel="noopener noreferrer"
+                          style={{ fontSize: '9px', color: COLORS.primary, fontFamily: FONTS.mono, textDecoration: 'none' }}
+                        >{tx.hash.slice(0, 10)}... ↗</a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* HCS Activity for settled matches */}
+              {hcsTopicId && (
+                <div className="panel" style={{ background: COLORS.bgSurface, padding: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <div className="label" style={{ fontSize: '8px', margin: 0 }}>ON-CHAIN ACTIVITY</div>
+                    <a href={`https://hashscan.io/testnet/topic/${hcsTopicId}`}
+                      target="_blank" rel="noopener noreferrer"
+                      style={{ fontSize: '9px', color: COLORS.primary, fontFamily: FONTS.mono, textDecoration: 'none' }}
+                    >{hcsTopicId} ↗</a>
+                  </div>
+                  {hcsMessages.length === 0 ? (
+                    <p style={{ color: COLORS.textDim, fontSize: '11px' }}>{hcsLoading ? 'Loading...' : 'No messages yet'}</p>
+                  ) : (
+                    <div style={{ maxHeight: '160px', overflowY: 'auto' }}>
+                      {hcsMessages.slice(0, 10).map((msg) => (
+                        <div key={msg.sequence_number} style={{
+                          padding: '4px 0', borderBottom: `1px solid ${COLORS.borderSubtle}`,
+                          fontSize: '10px', display: 'flex', justifyContent: 'space-between',
+                        }}>
+                          <span style={{ color: COLORS.primary, fontFamily: FONTS.mono }}>#{msg.sequence_number}</span>
+                          <span style={{ color: COLORS.textDim }}>{(msg.parsed?.type as string) ?? 'message'}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ) : matchData?.status === 'in_progress' ? (
             <div style={{ color: COLORS.textDim, fontSize: '13px' }}>
@@ -208,8 +356,20 @@ export default function MatchPage() {
 
             {/* HCS Activity */}
             <div className="panel" style={{ background: COLORS.bgSurface, padding: '12px' }}>
-              <div className="label" style={{ marginBottom: '8px', fontSize: '8px' }}>
-                ON-CHAIN ACTIVITY
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <div className="label" style={{ fontSize: '8px', margin: 0 }}>
+                  ON-CHAIN ACTIVITY
+                </div>
+                {hcsTopicId && (
+                  <a
+                    href={`https://hashscan.io/testnet/topic/${hcsTopicId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ fontSize: '9px', color: COLORS.primary, fontFamily: FONTS.mono, textDecoration: 'none' }}
+                  >
+                    {hcsTopicId} ↗
+                  </a>
+                )}
               </div>
               {!hcsTopicId ? (
                 <p style={{ color: COLORS.textDim, fontSize: '11px' }}>
@@ -221,20 +381,79 @@ export default function MatchPage() {
                 </p>
               ) : (
                 <div style={{ maxHeight: '160px', overflowY: 'auto' }}>
-                  {hcsMessages.slice(0, 10).map((msg) => (
-                    <div key={msg.sequence_number} style={{
-                      padding: '4px 0', borderBottom: `1px solid ${COLORS.borderSubtle}`,
-                      fontSize: '10px', display: 'flex', justifyContent: 'space-between',
-                    }}>
-                      <span style={{ color: COLORS.primary }}>#{msg.sequence_number}</span>
-                      <span style={{ color: COLORS.textDim }}>
-                        {(msg.parsed?.type as string) ?? 'message'}
-                      </span>
-                    </div>
-                  ))}
+                  {hcsMessages.slice(0, 10).map((msg) => {
+                    const msgType = (msg.parsed?.type as string) ?? 'message'
+                    const msgMatchId = msg.parsed?.match_id as string | undefined
+                    const msgWinner = msg.parsed?.winner as string | undefined
+                    const ts = new Date(msg.consensus_timestamp * 1000)
+                    const timeStr = ts.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+                    return (
+                      <div key={msg.sequence_number} style={{
+                        padding: '5px 0', borderBottom: `1px solid ${COLORS.borderSubtle}`,
+                        fontSize: '10px',
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                            <span style={{ color: COLORS.primary, fontFamily: FONTS.mono }}>#{msg.sequence_number}</span>
+                            <span style={{
+                              color: COLORS.text, fontFamily: FONTS.mono,
+                              padding: '1px 4px', background: COLORS.bgCard, borderRadius: '2px',
+                            }}>{msgType}</span>
+                          </div>
+                          <span style={{ color: COLORS.textDim, fontFamily: FONTS.mono, fontSize: '9px' }}>{timeStr}</span>
+                        </div>
+                        {(msgMatchId || msgWinner) && (
+                          <div style={{ marginTop: '2px', fontSize: '9px', color: COLORS.textDim, fontFamily: FONTS.mono }}>
+                            {msgMatchId && <span>match: {msgMatchId.slice(0, 12)}…</span>}
+                            {msgWinner && <span style={{ marginLeft: '8px', color: COLORS.green }}>winner: {msgWinner.slice(0, 10)}…</span>}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               )}
             </div>
+
+            {/* Transaction Proof */}
+            {(matchData?.on_chain_tx || matchData?.match_result_hash || matchData?.hcs_message_id) && (
+              <div className="panel" style={{ background: COLORS.bgSurface, padding: '12px' }}>
+                <div className="label" style={{ marginBottom: '8px', fontSize: '8px' }}>
+                  TRANSACTION PROOF
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {matchData.on_chain_tx && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '10px', color: COLORS.textDim }}>MatchProof Tx</span>
+                      <a
+                        href={`https://hashscan.io/testnet/transaction/${matchData.on_chain_tx}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ fontSize: '10px', color: COLORS.primary, fontFamily: FONTS.mono, textDecoration: 'none' }}
+                      >
+                        {matchData.on_chain_tx.slice(0, 10)}…
+                      </a>
+                    </div>
+                  )}
+                  {matchData.match_result_hash && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '10px', color: COLORS.textDim }}>Result Hash</span>
+                      <span style={{ fontSize: '10px', color: COLORS.text, fontFamily: FONTS.mono }}>
+                        {matchData.match_result_hash.slice(0, 10)}…
+                      </span>
+                    </div>
+                  )}
+                  {matchData.hcs_message_id && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '10px', color: COLORS.textDim }}>HCS Message</span>
+                      <span style={{ fontSize: '10px', color: COLORS.primary, fontFamily: FONTS.mono }}>
+                        #{matchData.hcs_message_id}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Right sidebar: competitors + betting */}

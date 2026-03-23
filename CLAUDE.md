@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-AI Agent Arcade ported from EVM (Monad) to Hedera. AI agents compete in game matches (Mario Kart 64 via Mupen64Plus), wager STEAM tokens, and publish match results via HCS. Spectators predict outcomes and earn rewards. Agent reputation is tracked on-chain via HTS.
+AI Agent Arcade ported from EVM (Monad) to Hedera. AI agents compete in game matches (Street Fighter II via stable-retro on Sega Genesis), wager STEAM tokens, and publish match results via HCS. Spectators predict outcomes and earn rewards. Agent reputation is tracked on-chain via HTS.
 
 This is a port of the original Steampunk project. Original source at:
 `/Users/ammar.robb/Documents/Web3/Steampunk/`
@@ -35,8 +35,8 @@ Reference the original freely. DO NOT copy wholesale — port selectively, adapt
 | Token | HTS (Hedera Token Service) — STEAM token, 8 decimals |
 | Messaging | HCS (Hedera Consensus Service) — HCS-10 for agent comms |
 | Arena server | FastAPI + SQLite |
-| Game emulator | Mupen64Plus (N64) |
-| Agent framework | Python (stable-baselines3 + LLM) |
+| Game emulator | stable-retro (Sega Genesis) + PIL for frame encoding |
+| Agent framework | Rule-based SF2 agent with configurable strategy profiles |
 | Frontend | Next.js 14 |
 | Hedera SDK | `@hashgraph/sdk` (JS) + `hedera-sdk` (Python via REST) |
 
@@ -76,7 +76,7 @@ steampunk-hedera/
 │   └── test/               # Foundry tests
 ├── arena/
 │   ├── main.py             # FastAPI entrypoint
-│   ├── adapters/           # Game adapter (Mupen64Plus bridge)
+│   ├── adapters/           # Game adapter (SF2 via stable-retro)
 │   ├── db/                 # SQLite models
 │   ├── matchmaking/        # Queue + ELO
 │   ├── oracle/             # Match result oracle (writes to contract)
@@ -129,3 +129,12 @@ steampunk-hedera/
 - HOL standards SDK: `@hashgraphonline/standards-sdk`
 - Hedera JS SDK: `@hashgraph/sdk`
 - Hedera portal (faucet): https://portal.hedera.com
+
+## Known Limitations (for next session)
+
+- SF2 uses single save state (Ryu vs Guile) — need 4-5 more save states for character variety
+- Betting window is short (~2-3 min matches) — consider adding a pre-match betting phase
+- Demo wallets created via `demo/setup-demo-wallets.ts` — run before demo
+- Tournament mode not implemented — would need bracket model + multi-match orchestration
+- HBAR native betting not supported — would need PredictionPool.sol rewrite for `msg.value`
+- Character names in emulator_bridge.py are hardcoded ("ryu" / "guile") based on player_index

@@ -133,12 +133,12 @@ deadline: 2026-03-24T00:59:00-04:00
 
 ### Should Do (improves score significantly)
 6. **Character variety** (2-3 hours) — create 4-5 save states, randomize per match
-7. **On-chain tx list on match page** (1-2 hours) — show HashScan links for bets/settlement
-8. **Agent reasoning in UI** (1 hour) — show strategy decisions in match viewer
+7. ~~**On-chain tx list on match page** (1-2 hours) — show HashScan links for bets/settlement~~ DONE
+8. ~~**Agent reasoning in UI** (1 hour) — show strategy decisions in match viewer~~ DONE
 9. **Update pitch deck** (30 min) — add BMC, GTM, SF2 screenshots
 
 ### Could Do (if time permits)
-10. **HCS feed on match page** (1 hour) — wire to match results topic
+10. ~~**HCS feed on match page** (1 hour) — wire to match results topic~~ DONE
 11. **Past match frames** (30 min) — store/show last frame
 12. **Tournament bracket** (4 hours) — 8-agent single elimination
 

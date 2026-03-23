@@ -34,6 +34,7 @@ export function BettingPanel({ matchId, bettingState, players }: Props) {
   const [betAmount, setBetAmount] = useState('')
   const [txStatus, setTxStatus] = useState<TxStatus>('idle')
   const [errorMsg, setErrorMsg] = useState('')
+  const [txHash, setTxHash] = useState<string | null>(null)
 
   const { writeContractAsync: approve } = useWriteContract()
   const { writeContractAsync: placeBet } = useWriteContract()
@@ -82,13 +83,14 @@ export function BettingPanel({ matchId, bettingState, players }: Props) {
       // Place the bet — hash UUID to uint256 (must match arena/utils.py)
       setTxStatus('betting')
       const matchIdNum = matchIdToUint256(matchId)
-      await placeBet({
+      const betTxHash = await placeBet({
         address: CONTRACTS.predictionPool,
         abi: predictionPoolAbi,
         functionName: 'placeBet',
         args: [matchIdNum, selectedAgent as `0x${string}`, amountUnits],
       })
 
+      setTxHash(betTxHash)
       setTxStatus('success')
       setBetAmount('')
       setSelectedAgent(null)
@@ -232,6 +234,19 @@ export function BettingPanel({ matchId, bettingState, players }: Props) {
                   {txStatus === 'success' && (
                     <p style={{ color: '#4ade80', fontSize: '11px', marginTop: '4px' }}>
                       Bet confirmed on Hedera
+                      {txHash && (
+                        <>
+                          {' — '}
+                          <a
+                            href={`https://hashscan.io/testnet/transaction/${txHash}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ color: COLORS.primary, textDecoration: 'none' }}
+                          >
+                            View on HashScan
+                          </a>
+                        </>
+                      )}
                     </p>
                   )}
                 </>

@@ -138,16 +138,34 @@ async def get_match(
     match = await session.get(MatchModel, match_id)
     if not match:
         raise HTTPException(status_code=404, detail="Match not found")
+
+    # Resolve agent names from DB
+    from sqlalchemy import select
+    addresses = match.agent_addresses.split(",")
+    agent_details = []
+    winner_name = None
+    for addr in addresses:
+        stmt = select(AgentModel).where(AgentModel.address == addr.lower())
+        row = (await session.execute(stmt)).scalar_one_or_none()
+        name = row.name if row else addr[:12]
+        agent_details.append({"address": addr, "name": name})
+        if match.winner_address and addr.lower() == match.winner_address.lower():
+            winner_name = name
+
     return {
         "match_id": match.match_id,
         "status": match.status,
-        "agents": match.agent_addresses.split(","),
+        "agents": addresses,
+        "agent_details": agent_details,
         "track_id": match.track_id,
         "created_at": match.created_at,
         "started_at": match.started_at,
         "ended_at": match.ended_at,
         "winner": match.winner_address,
+        "winner_name": winner_name,
         "hcs_message_id": match.hcs_message_id,
+        "on_chain_tx": match.on_chain_tx,
+        "match_result_hash": match.match_result_hash,
     }
 
 

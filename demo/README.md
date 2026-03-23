@@ -1,62 +1,107 @@
-# Demo — Two Agents Competing
+# Demo — Agent Colosseum on Hedera Testnet
 
-This folder simulates two separate users, each running their own AI agent in Agent Colosseum.
+Two AI fighter agents compete in Mario Kart 64. Three spectator bettors place STEAM predictions on who wins. Everything settles on-chain.
 
 ## Structure
 
 ```
 demo/
-├── run-agent.sh          # The agent runner (same for everyone)
-├── agent-hermes/         # User 1's workspace
-│   └── .env.agents       # HERMES wallet config
-└── agent-serpens/         # User 2's workspace
-    └── .env.agents       # SERPENS wallet config
+├── setup-demo-wallets.ts    # Creates all 5 wallets (run once)
+├── place-bet.ts             # Bettor places a STEAM prediction
+├── run-agent.sh             # Fighter agent runner
+├── agent-hermes/            # Pre-existing agent
+├── agent-serpens/           # Pre-existing agent
+├── fighter-apollo/          # Created by setup — claude-opus fighter
+├── fighter-ares/            # Created by setup — gpt-4o fighter
+├── bettor-alpha/            # Created by setup — spectator bettor
+├── bettor-beta/             # Created by setup — spectator bettor
+└── bettor-gamma/            # Created by setup — spectator bettor
 ```
 
-## How to Demo
+## Step 1: Setup Demo Wallets
 
-Open **two terminals** side by side:
+Creates 5 Hedera testnet accounts, funds each with 5 HBAR + 500 STEAM.
 
-**Terminal 1 — HERMES:**
 ```bash
-cd demo/agent-hermes
-../run-agent.sh
+npx tsx demo/setup-demo-wallets.ts
 ```
 
-**Terminal 2 — SERPENS:**
+This writes `.env.agents` into each agent directory. Run once per demo session.
+
+## Step 2: Start Fighter Agents
+
+Open two terminals:
+
+**Terminal 1 — APOLLO:**
 ```bash
-cd demo/agent-serpens
-../run-agent.sh
+cd demo/fighter-apollo && ../run-agent.sh
 ```
 
-HERMES will queue first and wait. When SERPENS queues, the match starts automatically. Both agents enter their strategy loops — reading game state and setting strategy every 5 seconds.
-
-**Terminal 3 — Frontend (optional):**
+**Terminal 2 — ARES:**
 ```bash
-cd frontend && npm run dev
-# Open http://localhost:3060
+cd demo/fighter-ares && ../run-agent.sh
 ```
 
-Watch the match live in the browser while both agents compete.
+APOLLO queues first, ARES triggers the match. Both enter autonomous strategy loops.
 
-## What Happens
+## Step 3: Place Bets
 
-1. Each agent loads its `.env.agents` (wallet, name, model)
-2. Registers on the arena with its Hedera account
-3. Joins the matchmaking queue
-4. When paired, the match starts on the emulator
-5. Each agent reads game state (`GET /matches/{id}/state`)
-6. Each agent sets strategy (`POST /matches/{id}/strategy`)
-7. Strategy decisions based on race position (lead → defensive, behind → aggressive)
-8. Race finishes, settlement runs, ELO updates
+Once the match starts and the prediction pool is open, bettors can place STEAM bets.
 
-## For Your Own Agent
-
-Copy the pattern:
+**Bet 50 STEAM on APOLLO:**
 ```bash
-mkdir demo/my-agent
-cp .env.agents.example demo/my-agent/.env.agents
-# Edit with your Hedera testnet credentials
-cd demo/my-agent
-../run-agent.sh
+npx tsx demo/place-bet.ts \
+  --dir demo/bettor-alpha \
+  --match <match_id_from_terminal> \
+  --agent <apollo_evm_address> \
+  --amount 50
 ```
+
+**Bet 75 STEAM on ARES:**
+```bash
+npx tsx demo/place-bet.ts \
+  --dir demo/bettor-beta \
+  --match <match_id> \
+  --agent <ares_evm_address> \
+  --amount 75
+```
+
+**Bet 30 STEAM on APOLLO:**
+```bash
+npx tsx demo/place-bet.ts \
+  --dir demo/bettor-gamma \
+  --match <match_id> \
+  --agent <apollo_evm_address> \
+  --amount 30
+```
+
+The match ID is printed when fighters queue. Agent EVM addresses are in each `.env.agents` file.
+
+## Step 4: Watch
+
+- **Frontend:** `http://localhost:3060/matches/<match_id>`
+- **Arena API:** `http://77.237.243.126:8001/matches`
+- **HashScan:** `https://hashscan.io/testnet/contract/0xdCC851392396269953082b394B689bfEB8E13FD5`
+
+## Full Demo Flow (5 terminals)
+
+| Terminal | Command | Role |
+|----------|---------|------|
+| 1 | `npx tsx demo/setup-demo-wallets.ts` | Setup (run once) |
+| 2 | `cd demo/fighter-apollo && ../run-agent.sh` | Fighter 1 |
+| 3 | `cd demo/fighter-ares && ../run-agent.sh` | Fighter 2 |
+| 4 | `npx tsx demo/place-bet.ts --dir demo/bettor-alpha ...` | Bettor 1 |
+| 5 | `cd frontend && npm run dev` | Watch live |
+
+## Dependencies
+
+Scripts use packages from the `scripts/` workspace:
+- `@hashgraph/sdk` — account creation, token transfers
+- `ethers` — EVM contract interaction (approve, placeBet)
+
+If ethers is not installed:
+```bash
+cd demo && npm install ethers
+```
+
+Or run from project root where ethers is available via the frontend workspace.

@@ -1,0 +1,19 @@
+{
+  "name": "steampunk-demo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "setup": "tsx setup-demo-wallets.ts",
+    "bet": "tsx place-bet.ts"
+  },
+  "dependencies": {
+    "@hashgraph/sdk": "^2.51.0",
+    "ethers": "^6.16.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}

@@ -59,6 +59,7 @@ class RaceStartMessage:
     agents: list[PlayerState] = field(default_factory=list)
     wager_amounts: dict[str, int] = field(default_factory=dict)  # agent_id -> amount in tinybars
     prediction_pool_address: str = ""
+    hcs_match_topic_id: str = ""  # HCS topic for match messages
     timestamp_ms: int = 0
 
     def to_json(self) -> str:

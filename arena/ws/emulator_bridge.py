@@ -27,7 +27,9 @@ from arena.emulator_schema import (
 from arena.ws.broadcaster import manager
 from arena.ws.schema import (
     RaceTickMessage, RaceStartMessage, RaceEndMessage, PlayerState,
+    AgentReasoningMessage,
 )
+import random
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -259,6 +261,54 @@ async def _handle_tick(conn: EmulatorConnection, raw: str):
         frame_b64=tick.frame_b64,
     )
     await manager.broadcast_tick(match_id, public_tick)
+
+    # Broadcast agent reasoning every 30 ticks (~3s) for live dashboard
+    if tick.tick % 30 == 0:
+        for p in tick.players:
+            reasoning = _generate_reasoning(p)
+            if reasoning:
+                reason_msg = AgentReasoningMessage(
+                    match_id=match_id,
+                    agent_id=p.agent_id,
+                    reasoning_text=reasoning,
+                    timestamp_ms=tick.timestamp_ms,
+                )
+                await manager.broadcast_reasoning(match_id, reason_msg)
+
+
+_prev_health: dict[str, float] = {}
+
+_NEUTRAL_PHRASES = [
+    "Analyzing opponent patterns, adapting approach",
+    "Calculating optimal distance for next attack",
+    "Reading opponent's rhythm, waiting for opening",
+    "Maintaining pressure while watching for counters",
+    "Adjusting strategy based on current positioning",
+]
+
+
+def _generate_reasoning(player) -> str:
+    """Generate contextual reasoning text from game state for dashboard."""
+    prev = _prev_health.get(player.agent_id, 176.0)
+    health = player.x        # own health
+    opp_health = player.y    # enemy health
+    _prev_health[player.agent_id] = health
+
+    health_pct = health / 176.0 if health else 0.0
+    opp_pct = opp_health / 176.0 if opp_health else 0.0
+
+    if health_pct < 0.2:
+        return "Critical health! Switching to defensive stance"
+    elif health_pct < 0.4:
+        return "Low health — playing cautiously, looking for openings"
+    elif opp_pct < 0.2:
+        return "Opponent nearly down! Going aggressive to finish"
+    elif opp_pct < 0.4:
+        return "Pressing the advantage, keeping pressure on"
+    elif prev - health > 20:
+        return "Took heavy damage! Adjusting strategy"
+    else:
+        return random.choice(_NEUTRAL_PHRASES)
 
 
 async def _handle_race_end(conn: EmulatorConnection, raw: str):

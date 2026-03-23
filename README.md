@@ -125,7 +125,7 @@ All messages use `@hashgraphonline/standards-sdk` following the [HCS-10 specific
 2. CONNECT     Agent sends connection_request to Matchmaker's inbound topic
 3. MATCHMAKE   Matchmaker pairs agents by game + wager, notifies both via HCS-10
 4. WAGER       Agents approve STEAM → Wager.sol locks escrow
-5. PLAY        Arena runs Clash of Wits (RPSLS) — agents play via strategy engine
+5. PLAY        Arena runs Street Fighter II — agents fight via Genesis emulator
 6. RESULT      Arena oracle signs result (EIP-712) → MatchProof.submitResult()
 7. SETTLE      Wager.sol pays winner; PredictionPool distributes to predictors
 8. PUBLISH     match_result + proof_hash published to HCS result topic
@@ -141,7 +141,8 @@ All messages use `@hashgraphonline/standards-sdk` following the [HCS-10 specific
 | AI Agents | TypeScript — autonomous loop with HCS-10 communication |
 | Agent Messaging | HCS-10 via `@hashgraphonline/standards-sdk` v0.1.165 |
 | Arena Server | FastAPI + SQLite + WebSocket broadcasting |
-| Game Engine | Clash of Wits (RPSLS best-of-7) with opponent history analysis |
+| Game Emulator | stable-retro (Sega Genesis) + PIL for frame encoding |
+| AI Fighters | Rule-based SF2 agent with configurable strategy profiles |
 | Smart Contracts | Solidity + Foundry → Hedera JSON-RPC Relay |
 | Tokens | HTS STEAM (fungible, 8 dec) |
 | Frontend | Next.js 14 (App Router) + RainbowKit + wagmi |
@@ -200,17 +201,17 @@ pip install -r arena/requirements.txt
 uvicorn arena.main:app --host 0.0.0.0 --port 8000
 ```
 
-### 5. Run AI Agents
+### 5. Run Demo Agents
 
 ```bash
-# Terminal 1: Matchmaker
-npx tsx agent_autonomy/matchmaker.ts
+# Terminal 1 — Fighter HERMES
+cd demo/agent-hermes && ../run-agent.sh
 
-# Terminal 2: MarioAgent
-npx tsx agent_autonomy/loop.ts --agent mario
+# Terminal 2 — Fighter SERPENS
+cd demo/agent-serpens && ../run-agent.sh
 
-# Terminal 3: LuigiAgent
-npx tsx agent_autonomy/loop.ts --agent luigi
+# Terminal 3 — Place a spectator bet (after match starts)
+cd demo/bettor-alpha && npx tsx ../place-bet.ts <match_id> <agent_address> 50
 ```
 
 ### 6. Frontend
@@ -253,6 +254,37 @@ steampunk-hedera/
 ├── scripts/                 # Hedera setup, contract deployment, agent registration
 └── tests/                   # Integration tests
 ```
+
+---
+
+## Current Limitations
+
+- **Character Selection**: Demo uses a fixed Ryu vs Guile save state. Character selection requires interactive save state creation (planned for v2).
+- **2-Player Matches Only**: Current implementation supports 1v1. Tournament brackets (8/16 players) planned.
+- **STEAM Token Betting**: Spectators bet with STEAM tokens (requires faucet). HBAR native betting planned.
+- **Match Duration**: SF2 matches complete in 2-3 minutes (best of 3 rounds). May be too short for extensive live betting.
+- **Single Game**: Currently SF2 only. The adapter pattern supports any retro game — Mario Kart 64 adapter also exists.
+
+---
+
+## Roadmap
+
+### v2 — Character Selection & Prize Pools
+- Players choose their fighter character when entering a match
+- Entrance fee becomes the prize pool (winner takes majority, platform fee)
+- Multiple save states for character variety (4-8 characters)
+
+### v3 — Tournament Mode
+- 8 or 16-player single elimination brackets (UCL-style)
+- Progressive prize pools — 1st, 2nd, 3rd place payouts
+- Tournament-wide betting markets
+- Multi-round spectator engagement
+
+### v4 — Multi-Game Arcade
+- Mario Kart 64, Mortal Kombat, and more retro games
+- Game-specific AI agent architectures
+- Cross-game ELO rating system
+- HBAR native betting alongside STEAM tokens
 
 ---
 

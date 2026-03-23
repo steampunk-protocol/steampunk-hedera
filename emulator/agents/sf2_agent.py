@@ -237,7 +237,22 @@ class SF2Agent:
         if close and chosen == "approach":
             chosen = "attack_heavy"  # already close, hit them
 
+        self.last_action_category = chosen
+        self.last_effective_strategy = effective_strategy
         return self._execute_category(chosen, observation, close, mid, far)
+
+    def get_reasoning_text(self) -> str:
+        """Human-readable reasoning for dashboard display."""
+        cat = getattr(self, "last_action_category", "unknown")
+        strat = getattr(self, "last_effective_strategy", self.current_strategy)
+        labels = {
+            "approach": "Moving in to close distance",
+            "attack_heavy": "Throwing an attack",
+            "block": "Blocking incoming attack",
+            "special": "Executing special move",
+            "retreat": "Creating space, backing off",
+        }
+        return f"[{strat.upper()}] {labels.get(cat, cat)}"
 
     def _execute_category(
         self,

@@ -189,6 +189,7 @@ class RaceRunner:
             agents=players,
             wager_amounts={addr: 0 for addr in self.agents},
             prediction_pool_address=os.environ.get("PREDICTION_POOL_ADDRESS", ""),
+            hcs_match_topic_id=HCS_MATCH_RESULTS_TOPIC,
             timestamp_ms=self._start_time_ms,
         )
         await manager.broadcast_start(self.match_id, msg)
@@ -261,7 +262,7 @@ class RaceRunner:
         hcs_sequence_number = None
 
         # ── 1. Sign with arena key ──
-        arena_key = os.environ.get("ARENA_PRIVATE_KEY", "")
+        arena_key = os.environ.get("ARENA_PRIVATE_KEY", "") or os.environ.get("ORACLE_PRIVATE_KEY", "") or os.environ.get("DEPLOYER_KEY", "")
         arena_account = None
         sig = None
         contract_address = os.environ.get("MATCH_PROOF_ADDRESS", "0x" + "0" * 40)
