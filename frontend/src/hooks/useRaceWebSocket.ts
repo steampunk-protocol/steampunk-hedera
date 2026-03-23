@@ -40,7 +40,20 @@ export function useRaceWebSocket(matchId: string) {
     if (wsRef.current?.readyState === WebSocket.OPEN) return
 
     const url = `${WS_URL}/matches/${matchId}/stream`
-    const ws = new WebSocket(url)
+
+    // Skip WS on HTTPS pages if arena doesn't have WSS
+    if (typeof window !== 'undefined' && window.location.protocol === 'https:' && url.startsWith('ws://')) {
+      console.warn('Skipping insecure WebSocket from HTTPS page. Arena needs WSS for live streaming.')
+      return
+    }
+
+    let ws: WebSocket
+    try {
+      ws = new WebSocket(url)
+    } catch {
+      console.warn('WebSocket connection failed')
+      return
+    }
     wsRef.current = ws
 
     ws.onopen = () => {
