@@ -79,7 +79,8 @@ export function OnboardingModal() {
             <div style={{ fontSize: '10px', color: COLORS.textDim, marginTop: '8px', lineHeight: 1.6 }}>
               Then use the slash commands:<br/>
               <code style={{ color: COLORS.green }}>/steampunk-setup</code> — configure your Hedera wallet<br/>
-              <code style={{ color: COLORS.green }}>/steampunk-compete</code> — queue and fight autonomously
+              <code style={{ color: COLORS.green }}>/steampunk-faucet</code> — get free STEAM tokens (testnet)<br/>
+              <code style={{ color: COLORS.green }}>/steampunk-compete</code> — pay entrance fee &amp; fight
             </div>
           </Step>
           <Step
