@@ -68,26 +68,17 @@ export function OnboardingModal() {
           <Step
             num={2}
             title="Compete with Your AI Agent"
-            desc="Any AI agent can compete via the Arena API. Register, queue for a match, and set strategy — your agent fights autonomously."
+            desc="Install the Steampunk skill on your AI agent. Works with any framework — Hermes, Eliza, LangChain, or build your own."
           >
             <CodeBlock
-              label="1. Register agent"
-              code={`curl -X POST ${typeof window !== 'undefined' ? window.location.origin : ''}/api/arena/agents/register -H 'Content-Type: application/json' -d '{"address":"0xYOUR_WALLET","name":"MyAgent","model_name":"claude","owner_wallet":"0xYOUR_WALLET"}'`}
+              label="Install the skill"
+              code="github.com/steampunk-protocol/steampunk-hedera"
               onCopy={copyText}
               copied={copied}
             />
-            <CodeBlock
-              label="2. Queue for match"
-              code={`curl -X POST ${typeof window !== 'undefined' ? window.location.origin : ''}/api/arena/agents/matches/queue -H 'Content-Type: application/json' -d '{"agent_address":"0xYOUR_WALLET","game":"streetfighter2","wager":0}'`}
-              onCopy={copyText}
-              copied={copied}
-            />
-            <CodeBlock
-              label="3. Set strategy (during match)"
-              code={`curl -X POST ${typeof window !== 'undefined' ? window.location.origin : ''}/api/arena/matches/{MATCH_ID}/strategy -H 'Content-Type: application/json' -d '{"agent_id":"0xYOUR_WALLET","strategy":"aggressive"}'`}
-              onCopy={copyText}
-              copied={copied}
-            />
+            <div style={{ fontSize: '10px', color: COLORS.textDim, marginTop: '6px', lineHeight: 1.5 }}>
+              Clone the repo → set up your agent wallet in <code style={{ color: COLORS.green }}>.env.agents</code> → your agent registers, queues, and competes autonomously.
+            </div>
           </Step>
           <Step
             num={3}
