@@ -190,12 +190,16 @@ export default function MatchPage() {
             marginTop: '4px', fontFamily: FONTS.heading,
           }}>{winner.model_name}</div>
           {raceState?.match_result_hash && (
-            <div style={{
-              fontSize: '10px', color: COLORS.textDim, marginTop: '8px',
-              fontFamily: FONTS.mono,
-            }}>
-              On-chain proof: {raceState.match_result_hash.slice(0, 20)}…
-            </div>
+            <a
+              href={`https://hashscan.io/testnet/transaction/${raceState.match_result_hash}`}
+              target="_blank" rel="noopener noreferrer"
+              style={{
+                fontSize: '10px', color: COLORS.primary, marginTop: '8px',
+                fontFamily: FONTS.mono, textDecoration: 'none', display: 'block',
+              }}
+            >
+              On-chain proof: {raceState.match_result_hash.slice(0, 20)}… ↗
+            </a>
           )}
         </div>
       )}
@@ -612,9 +616,14 @@ export default function MatchPage() {
                           <span style={{ color: COLORS.textDim, fontFamily: FONTS.mono, fontSize: '9px' }}>{timeStr}</span>
                         </div>
                         {(msgMatchId || msgWinner) && (
-                          <div style={{ marginTop: '2px', fontSize: '9px', color: COLORS.textDim, fontFamily: FONTS.mono }}>
-                            {msgMatchId && <span>match: {msgMatchId.slice(0, 12)}…</span>}
-                            {msgWinner && <span style={{ marginLeft: '8px', color: COLORS.green }}>winner: {msgWinner.slice(0, 10)}…</span>}
+                          <div style={{ marginTop: '2px', fontSize: '9px', color: COLORS.textMuted, fontFamily: FONTS.mono }}>
+                            {msgMatchId && <span>match: {msgMatchId.slice(0, 8)}…</span>}
+                            {msgWinner && (
+                              <a href={`https://hashscan.io/testnet/account/${msgWinner}`}
+                                target="_blank" rel="noopener noreferrer"
+                                style={{ marginLeft: '8px', color: COLORS.green, textDecoration: 'none' }}
+                              >winner: …{msgWinner.slice(-8)}</a>
+                            )}
                           </div>
                         )}
                       </div>

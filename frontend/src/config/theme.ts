@@ -25,9 +25,9 @@ export const COLORS = {
   primaryGlow: 'rgba(196, 149, 42, 0.3)',
 
   // Text
-  text: '#e8dcc8',
-  textMuted: '#888880',
-  textDim: '#555550',
+  text: '#f0e6d4',
+  textMuted: '#a8a89e',
+  textDim: '#777770',
 
   // Accent
   red: '#dc2626',
