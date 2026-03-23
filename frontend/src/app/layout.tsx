@@ -3,6 +3,7 @@ import './globals.css'
 import { Web3Provider } from '@/providers/Web3Provider'
 import { NavBar } from '@/components/NavBar'
 import { ChatPanel } from '@/components/chat/ChatPanel'
+import { OnboardingModal } from '@/components/OnboardingModal'
 
 export const metadata: Metadata = {
   title: 'STEAMPUNK — AI Agent Battle Arena on Hedera',
@@ -25,6 +26,7 @@ export default function RootLayout({
           <NavBar />
           {children}
           <ChatPanel asPanel={true} defaultCollapsed={true} />
+          <OnboardingModal />
         </Web3Provider>
       </body>
     </html>

@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { useRaceWebSocket } from '@/hooks/useRaceWebSocket'
 import { useHCSFeed } from '@/hooks/useHCSFeed'
@@ -9,16 +10,40 @@ import { BettingPanel } from '@/components/betting/BettingPanel'
 import { RaceTimer } from '@/components/race/RaceTimer'
 import { FightViewer } from '@/components/fight/FightViewer'
 import { COLORS, FONTS, MATCH_LABELS } from '@/config/theme'
+import { ARENA_API } from '@/config/arena'
+
+interface MatchData {
+  match_id: string
+  status: string
+  agents: string[]
+  winner: string | null
+  hcs_message_id: string | null
+  created_at: number
+  ended_at: number | null
+}
 
 export default function MatchPage() {
   const params = useParams()
   const matchId = params.matchId as string
   const { raceState, bettingState, reasoningMap, connected } = useRaceWebSocket(matchId)
 
+  // Fetch match data from REST API (for past/settled matches)
+  const [matchData, setMatchData] = useState<MatchData | null>(null)
+  useEffect(() => {
+    fetch(`${ARENA_API}/agents/matches/${matchId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => setMatchData(d))
+      .catch(() => {})
+  }, [matchId])
+
   const hcsTopicId = raceState?.hcs_match_topic_id ?? ''
   const { messages: hcsMessages, loading: hcsLoading } = useHCSFeed(hcsTopicId)
 
-  const status = raceState?.race_status ?? 'waiting'
+  // Use WS state if available, fall back to REST data
+  const isLiveWS = !!raceState && (raceState.race_status === 'in_progress' || raceState.players.length > 0)
+  const status = isLiveWS
+    ? raceState!.race_status
+    : (matchData?.status === 'settled' ? 'finished' : matchData?.status ?? 'waiting')
   const players = raceState?.players ?? []
 
   // Detect game type: FightViewer if frame exists or health in 0-176 range
@@ -96,18 +121,70 @@ export default function MatchPage() {
         </div>
       )}
 
-      {/* Waiting state */}
-      {status === 'waiting' && players.length === 0 && (
+      {/* Waiting / Settled without WS */}
+      {!isLiveWS && players.length === 0 && (
         <div style={{
-          padding: '60px 16px', textAlign: 'center',
-          color: COLORS.textDim, fontSize: '13px',
+          padding: '40px 16px', textAlign: 'center',
         }}>
-          <div style={{
-            fontSize: '32px', marginBottom: '12px', color: COLORS.primary,
-            animation: 'spin 8s linear infinite',
-          }}>⚙</div>
-          Waiting for agents to join…
-          <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+          {matchData?.status === 'settled' || matchData?.status === 'finished' ? (
+            /* Show settled match result */
+            <div>
+              <div style={{
+                padding: '24px', marginBottom: '16px',
+                background: `linear-gradient(135deg, ${COLORS.bgCard}, ${COLORS.bgSurface})`,
+                border: `1px solid ${COLORS.primary}`,
+                borderRadius: '8px',
+                boxShadow: `0 0 20px ${COLORS.primaryGlow}`,
+              }}>
+                <div style={{
+                  fontSize: '10px', color: COLORS.primary,
+                  textTransform: 'uppercase', letterSpacing: '4px',
+                  fontFamily: FONTS.heading, marginBottom: '8px',
+                }}>Match Complete</div>
+                <div style={{ fontSize: '13px', color: COLORS.textMuted, marginBottom: '12px' }}>
+                  {matchData.agents.map(a => a.slice(0, 10) + '…').join(' vs ')}
+                </div>
+                {matchData.winner && (
+                  <div>
+                    <div style={{ fontSize: '10px', color: COLORS.textDim, marginBottom: '4px' }}>Winner</div>
+                    <div style={{
+                      fontSize: '18px', fontWeight: 'bold', color: COLORS.primary,
+                      fontFamily: FONTS.heading,
+                    }}>{matchData.winner.slice(0, 12)}…</div>
+                  </div>
+                )}
+                {matchData.hcs_message_id && (
+                  <div style={{
+                    fontSize: '10px', color: COLORS.textDim, marginTop: '12px',
+                    fontFamily: FONTS.mono,
+                  }}>
+                    On-chain proof: HCS #{matchData.hcs_message_id}
+                  </div>
+                )}
+                {matchData.ended_at && (
+                  <div style={{ fontSize: '10px', color: COLORS.textDim, marginTop: '4px' }}>
+                    Settled: {new Date(matchData.ended_at).toLocaleString()}
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : matchData?.status === 'in_progress' ? (
+            <div style={{ color: COLORS.textDim, fontSize: '13px' }}>
+              <div style={{
+                fontSize: '32px', marginBottom: '12px', color: COLORS.green,
+              }}>●</div>
+              Match is in progress — connecting to live feed…
+            </div>
+          ) : (
+            <div style={{ color: COLORS.textDim, fontSize: '13px' }}>
+              <div style={{
+                fontSize: '32px', marginBottom: '12px', color: COLORS.primary,
+                animation: 'spin 8s linear infinite',
+              }}>⚙</div>
+              Waiting for agents to join…
+              <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+            </div>
+          )}
         </div>
       )}
 

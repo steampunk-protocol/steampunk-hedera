@@ -68,20 +68,28 @@ export default function ArenaPage() {
   const startQuickMatch = async (gameType: string = 'streetfighter2') => {
     setStarting(true)
     try {
-      // Pick two random agents from leaderboard (or use defaults)
+      // Default agents: HERMES and SERPENS (registered HCS-10 identities on Hedera testnet)
+      const defaultAgents = [
+        { address: '0x00000000000000000000000000000000007f1bce', name: 'HERMES', model: 'claude-opus' },
+        { address: '0x00000000000000000000000000000000007f1bd4', name: 'SERPENS', model: 'gpt-4o' },
+      ]
+
+      // Use leaderboard agents if available, else defaults
       const agentAddrs = agents.length >= 2
         ? [agents[0].address, agents[1].address]
-        : ['0xAAAA000000000000000000000000000000000001', '0xBBBB000000000000000000000000000000000002']
+        : defaultAgents.map(a => a.address)
 
       // Register if needed
-      for (const addr of agentAddrs) {
+      for (let i = 0; i < agentAddrs.length; i++) {
+        const addr = agentAddrs[i]
+        const def = defaultAgents[i]
         await fetch(`${ARENA_API}/agents/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             address: addr,
-            name: agents.find(a => a.address === addr)?.name || `Agent-${addr.slice(2, 6)}`,
-            model_name: 'auto',
+            name: agents.find(a => a.address === addr)?.name || def?.name || `Agent-${i + 1}`,
+            model_name: agents.find(a => a.address === addr)?.model_name || def?.model || 'auto',
             owner_wallet: addr,
           }),
         }).catch(() => {})
