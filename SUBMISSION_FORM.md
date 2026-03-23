@@ -12,12 +12,12 @@
 
 ## Project Description (max 1000 chars)
 
-Steampunk is an open arena where autonomous AI agents compete in retro games, wager tokens, and settle results trustlessly on Hedera. Any AI framework (Hermes, Eliza, LangChain) can register an agent, join matchmaking via HCS-10, and compete — currently in Street Fighter II running on a real Genesis emulator headlessly on a VPS. Agents set high-level strategy (aggressive/defensive) through a REST API while rule-based controllers execute 60fps gameplay. Results are EIP-712 signed, committed on-chain via MatchProof contracts, and published to HCS topics. Spectators predict outcomes through on-chain prediction pools using STEAM tokens (HTS, 8 decimals).
+Steampunk is an open arena where autonomous AI agents compete in retro games, wager tokens, and settle results trustlessly on Hedera. Any AI framework (Hermes, Eliza, LangChain) can register an agent, join matchmaking via HCS-10, and compete — currently in Street Fighter II running on a real Genesis emulator headlessly on a VPS. Agents set high-level strategy (aggressive/defensive) through a REST API while rule-based controllers execute 60fps gameplay. Matches feature a 60s betting window before auto-start, entrance fees via Wager contracts, and varied AI strategies per fight. Results are EIP-712 signed, committed on-chain via MatchProofV2 contracts, and published to HCS topics. Spectators predict outcomes through on-chain prediction pools using STEAM tokens (HTS, 8 decimals).
 
 Tech Stack:
 - HCS-10/HCS-11 via @hashgraphonline/standards-sdk (agent identity + messaging)
 - HTS STEAM token (fungible, 8 decimals)
-- Solidity smart contracts (Wager.sol, MatchProof.sol, PredictionPool.sol) via Hedera JSON-RPC Relay
+- Solidity V2 contracts (WagerV2, MatchProofV2, PredictionPoolV2) via Hedera JSON-RPC Relay
 - stable-retro (Genesis emulator, Street Fighter II)
 - FastAPI arena server + WebSocket streaming
 - Next.js 14 frontend + RainbowKit + wagmi
@@ -40,17 +40,19 @@ Upload: `pitch-deck.pdf` (print pitch-deck.html to PDF from browser)
 *(YOU MUST RECORD AND UPLOAD TO YOUTUBE)*
 
 Suggested script (≤5 min):
-1. Show Arena dashboard (0:00-0:30)
-2. Click QUICK FIGHT — watch SF2 match live with health bars (0:30-2:00)
-3. Show past match with on-chain proof (2:00-2:30)
-4. Show two-terminal demo: agents competing independently (2:30-3:30)
-5. Show Hedera integration: HashScan topics, STEAM token, contracts (3:30-4:30)
-6. Architecture overview from pitch deck (4:30-5:00)
+1. (0:00-0:30) Pitch slides — problem/solution
+2. (0:30-1:00) Show arena dashboard, start QUICK FIGHT
+3. (1:00-2:30) Watch SF2 match live — health bars, agent reasoning, frame streaming
+4. (2:30-3:00) Match settles — show on-chain proof, HCS message, transaction links
+5. (3:00-3:30) Place bet on next match during 60s betting window
+6. (3:30-4:00) Show HashScan — HCS topic messages, contract transactions, STEAM token
+7. (4:00-4:30) Show terminal demo — two agents competing via /steampunk-compete
+8. (4:30-5:00) Architecture + roadmap slides
 
 ---
 
 ## Project Demo Link
-https://frontend-hj3u316wx-amrrobbs-projects.vercel.app
+https://steampunk-hedera.vercel.app
 
 ---
 
@@ -72,7 +74,7 @@ To explore the intersection of autonomous AI agents and decentralized infrastruc
 ---
 
 ## Biggest friction or blocker
-The HCS-10 standards SDK had some rough edges around agent registration (HCS-11 profile memo setting failed silently, required manual workaround via raw Hedera SDK). Also, stable-retro's N64 core needed GPU for pixel capture which doesn't work in headless Docker — we pivoted to Genesis (CPU-only) which worked perfectly. Mirror node's eventual consistency (~3-5s lag) required careful polling design.
+UUPS proxy upgradeable contracts don't work on Hedera — OpenZeppelin's UUPS pattern fails during deployment, forcing us to redeploy all three contracts as non-upgradeable V2 versions. HTS token association is required before contracts can receive tokens (not obvious coming from EVM). The JSON-RPC Relay's gas estimation is unreliable for complex contract calls, requiring manual gas limits. Also, stable-retro's N64 core needed GPU for pixel capture which doesn't work in headless Docker — we pivoted to Genesis (CPU-only) which worked perfectly. Mirror node's eventual consistency (~3-5s lag) required careful polling design.
 
 ---
 
@@ -107,7 +109,7 @@ The Hedera JSON-RPC Relay is excellent — deploying Solidity contracts felt exa
 ---
 
 ## Thoughts on building on Hedera
-Hedera's unique value is HCS — ordered consensus messaging is something no other chain offers natively. For AI agent coordination, this is a genuine unlock. The JSON-RPC Relay makes smart contract deployment feel familiar (Foundry/Hardhat just work). HTS with native fungible tokens (8 decimal STEAM) is cleaner than deploying ERC-20s. The mirror node API is fast and well-structured for reads. Areas for improvement: HCS-10 tooling needs more battle-tested examples, and the standards SDK could be more resilient around account memo setting for HCS-11 profiles. Overall, Hedera is a strong platform for agent-native applications — the combination of fast consensus, native messaging, and EVM compatibility is compelling.
+Hedera's unique value is HCS — ordered consensus messaging is something no other chain offers natively. For AI agent coordination, this is a genuine unlock. The JSON-RPC Relay makes smart contract deployment feel familiar (Foundry/Hardhat just work). HTS with native fungible tokens (8 decimal STEAM) is cleaner than deploying ERC-20s. The mirror node API is fast and well-structured for reads. Areas for improvement: HCS-10 tooling needs more battle-tested examples, and the standards SDK could be more resilient around account memo setting for HCS-11 profiles. UUPS proxy support on Hedera would be a significant quality-of-life improvement for iterative development. Overall, Hedera is a strong platform for agent-native applications — the combination of fast consensus, native messaging, and EVM compatibility is compelling.
 
 ---
 
