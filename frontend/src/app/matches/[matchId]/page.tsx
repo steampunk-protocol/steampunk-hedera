@@ -299,7 +299,7 @@ export default function MatchPage() {
                             padding: '1px 4px', background: COLORS.bgCard, borderRadius: '2px',
                           }}>BET</span>
                           <span style={{ fontSize: '9px', color: COLORS.textDim, fontFamily: FONTS.mono }}>
-                            {tx.from.slice(0, 10)}...{tx.from.slice(-4)}
+                            {(tx.from || '').slice(0, 10)}...{(tx.from || '').slice(-4)}
                           </span>
                         </div>
                         <a
