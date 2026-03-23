@@ -22,6 +22,18 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 DEFAULT_RPC_URL = "https://testnet.hashio.io/api"
+# Hedera JSON-RPC relay needs explicit gas price (gas estimation often fails)
+HEDERA_GAS_PRICE = 1_500_000_000_000  # 1500 gwei
+
+
+def _tx_params(w3, arena_account, gas: int = 300000) -> dict:
+    """Standard tx params for Hedera JSON-RPC relay."""
+    return {
+        "from": arena_account.address,
+        "nonce": w3.eth.get_transaction_count(arena_account.address),
+        "gas": gas,
+        "gasPrice": HEDERA_GAS_PRICE,
+    }
 
 
 def _load_pool_contract(rpc_url: str, pool_address: str):
@@ -59,11 +71,7 @@ def _create_pool_sync(rpc_url: str, pool_address: str, numeric_match_id: int, ag
     agent_addrs = [Web3.to_checksum_address(a) for a in agents if a != "0x" + "0" * 40]
 
     nonce = w3.eth.get_transaction_count(arena_account.address)
-    tx = pool.functions.createPool(numeric_match_id, agent_addrs).build_transaction({
-        "from": arena_account.address,
-        "nonce": nonce,
-        "gas": 300000,
-    })
+    tx = pool.functions.createPool(numeric_match_id, agent_addrs).build_transaction(_tx_params(w3, arena_account, 300000))
     signed_tx = arena_account.sign_transaction(tx)
     tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
     receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
@@ -78,11 +86,7 @@ def _lock_pool_sync(rpc_url: str, pool_address: str, numeric_match_id: int, aren
     w3, pool = _load_pool_contract(rpc_url, pool_address)
 
     nonce = w3.eth.get_transaction_count(arena_account.address)
-    tx = pool.functions.lockPool(numeric_match_id).build_transaction({
-        "from": arena_account.address,
-        "nonce": nonce,
-        "gas": 200000,
-    })
+    tx = pool.functions.lockPool(numeric_match_id).build_transaction(_tx_params(w3, arena_account, 200000))
     signed_tx = arena_account.sign_transaction(tx)
     tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
     receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
@@ -101,11 +105,7 @@ def _settle_pool_sync(rpc_url: str, pool_address: str, numeric_match_id: int, wi
     tx = pool.functions.settlePool(
         numeric_match_id,
         Web3.to_checksum_address(winner_address),
-    ).build_transaction({
-        "from": arena_account.address,
-        "nonce": w3.eth.get_transaction_count(arena_account.address),
-        "gas": 200000,
-    })
+    ).build_transaction(_tx_params(w3, arena_account, 200000))
     signed_tx = arena_account.sign_transaction(tx)
     tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
     receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
@@ -198,26 +198,40 @@ def _load_wager_contract(rpc_url: str, wager_address: str):
 
 def _create_wager_sync(rpc_url: str, wager_address: str, numeric_match_id: int,
                        agents: list[str], wager_amount_raw: int, arena_account):
-    """Blocking: call WagerV2.createMatch(matchId, agents, wagerAmount)."""
+    """Blocking: createMatch + approve STEAM + depositFor each agent."""
     from web3 import Web3
+    import json as _json
 
     w3, wager = _load_wager_contract(rpc_url, wager_address)
     agent_addrs = [Web3.to_checksum_address(a) for a in agents if a != "0x" + "0" * 40]
 
+    # 1. Create the wager match
+    nonce = w3.eth.get_transaction_count(arena_account.address)
     tx = wager.functions.createMatch(
         numeric_match_id, agent_addrs, wager_amount_raw
-    ).build_transaction({
-        "from": arena_account.address,
-        "nonce": w3.eth.get_transaction_count(arena_account.address),
-        "gas": 400000,
-    })
+    ).build_transaction(_tx_params(w3, arena_account, 400000))
     signed_tx = arena_account.sign_transaction(tx)
     tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
     receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
-    if receipt.status == 1:
-        logger.info(f"Wager.createMatch() succeeded: matchId={numeric_match_id}, amount={wager_amount_raw}")
-    else:
+    if receipt.status != 1:
         logger.error(f"Wager.createMatch() reverted: {tx_hash.hex()}")
+        return
+    logger.info(f"Wager.createMatch() succeeded: matchId={numeric_match_id}, amount={wager_amount_raw}")
+
+    # 2. depositFor each agent (arena deposits on their behalf)
+    # STEAM allowance is pre-approved via HTS AccountAllowanceApproveTransaction
+    for agent_addr in agent_addrs:
+        nonce = w3.eth.get_transaction_count(arena_account.address)
+        dep_tx = wager.functions.depositFor(
+            numeric_match_id, agent_addr
+        ).build_transaction(_tx_params(w3, arena_account, 300000))
+        signed = arena_account.sign_transaction(dep_tx)
+        tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
+        receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
+        if receipt.status == 1:
+            logger.info(f"Wager.depositFor({agent_addr}) succeeded")
+        else:
+            logger.error(f"Wager.depositFor({agent_addr}) reverted: {tx_hash.hex()}")
 
 
 def _settle_wager_sync(rpc_url: str, wager_address: str, numeric_match_id: int,
@@ -230,11 +244,7 @@ def _settle_wager_sync(rpc_url: str, wager_address: str, numeric_match_id: int,
     tx = wager.functions.settle(
         numeric_match_id,
         Web3.to_checksum_address(winner_address),
-    ).build_transaction({
-        "from": arena_account.address,
-        "nonce": w3.eth.get_transaction_count(arena_account.address),
-        "gas": 300000,
-    })
+    ).build_transaction(_tx_params(w3, arena_account, 300000))
     signed_tx = arena_account.sign_transaction(tx)
     tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
     receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=60)

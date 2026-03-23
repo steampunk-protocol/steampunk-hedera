@@ -85,6 +85,24 @@
     },
     {
       "type": "function",
+      "name": "depositFor",
+      "inputs": [
+        {
+          "name": "matchId",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "agent",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
       "name": "deposited",
       "inputs": [
         {

@@ -88,6 +88,29 @@ contract WagerV2 is Ownable, ReentrancyGuard {
         if (allDeposited) m.status = MatchStatus.Active;
     }
 
+    function depositFor(uint256 matchId, address agent) external onlyArena nonReentrant {
+        Match storage m = matches[matchId];
+        require(m.matchId > 0, "match not found");
+        require(m.status == MatchStatus.Pending, "not pending");
+        require(!deposited[matchId][agent], "already deposited");
+
+        bool isAgent = false;
+        for (uint256 i = 0; i < m.agents.length; i++) {
+            if (m.agents[i] == agent) { isAgent = true; break; }
+        }
+        require(isAgent, "not a match agent");
+
+        token.safeTransferFrom(msg.sender, address(this), m.wagerAmount);
+        deposited[matchId][agent] = true;
+        emit Deposited(matchId, agent, m.wagerAmount);
+
+        bool allDeposited = true;
+        for (uint256 i = 0; i < m.agents.length; i++) {
+            if (!deposited[matchId][m.agents[i]]) { allDeposited = false; break; }
+        }
+        if (allDeposited) m.status = MatchStatus.Active;
+    }
+
     function settle(uint256 matchId, address winner) external onlyArena nonReentrant {
         Match storage m = matches[matchId];
         require(m.status == MatchStatus.Active, "not active");

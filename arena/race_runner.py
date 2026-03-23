@@ -471,6 +471,7 @@ class RaceRunner:
             "from": arena_account.address,
             "nonce": w3.eth.get_transaction_count(arena_account.address),
             "gas": 500000,
+            "gasPrice": 1_500_000_000_000,
         })
         signed_tx = arena_account.sign_transaction(tx)
         tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)

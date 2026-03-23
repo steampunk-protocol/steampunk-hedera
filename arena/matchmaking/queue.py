@@ -116,13 +116,9 @@ async def join_queue(
                 f"with {participants}, wager={match_wager} STEAM"
             )
 
-            # Create prediction pool on-chain so spectators can bet while match is pending
-            asyncio.ensure_future(create_pool_on_chain(match_id, participants))
-
-            # Create wager on-chain (entrance fee escrow)
+            # Create pool + wager on-chain sequentially (avoid nonce collision)
             wager_raw = int(match_wager * (10 ** STEAM_DECIMALS))
-            if wager_raw > 0:
-                asyncio.ensure_future(create_wager_on_chain(match_id, participants, wager_raw))
+            asyncio.ensure_future(_create_on_chain(match_id, participants, wager_raw))
 
             # Auto-start match after betting window
             asyncio.ensure_future(_auto_start_after_betting_window(match_id, participants))
@@ -226,6 +222,19 @@ async def get_leaderboard(
         })
 
     return leaderboard
+
+
+async def _create_on_chain(match_id: str, agents: list[str], wager_raw: int) -> None:
+    """Create pool + wager on-chain sequentially to avoid nonce collision."""
+    try:
+        await create_pool_on_chain(match_id, agents)
+    except Exception as e:
+        logger.error(f"createPool failed for {match_id}: {e}")
+    try:
+        if wager_raw > 0:
+            await create_wager_on_chain(match_id, agents, wager_raw)
+    except Exception as e:
+        logger.error(f"createWager failed for {match_id}: {e}")
 
 
 async def _auto_start_after_betting_window(match_id: str, agents: list[str]) -> None:
