@@ -41,7 +41,7 @@ def _get_arena_account():
     """Load arena signing account from env."""
     from eth_account import Account
 
-    arena_key = os.environ.get("ARENA_PRIVATE_KEY", "")
+    arena_key = os.environ.get("ARENA_PRIVATE_KEY", "") or os.environ.get("ORACLE_PRIVATE_KEY", "") or os.environ.get("DEPLOYER_KEY", "")
     if not arena_key:
         return None
     return Account.from_key(arena_key if arena_key.startswith("0x") else "0x" + arena_key)

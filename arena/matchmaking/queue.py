@@ -26,6 +26,7 @@ MIN_PLAYERS = 2
 MAX_PLAYERS = 4
 QUEUE_TIMEOUT_S = 60
 STEAM_DECIMALS = 8
+BETTING_WINDOW_S = 30  # seconds between match creation and auto-start
 
 
 class AgentRegistration(BaseModel):
@@ -118,12 +119,17 @@ async def join_queue(
             # Create prediction pool on-chain so spectators can bet while match is pending
             asyncio.ensure_future(create_pool_on_chain(match_id, participants))
 
+            # Auto-start match after betting window
+            asyncio.ensure_future(_auto_start_after_betting_window(match_id, participants))
+
             return {
                 "status": "matched",
                 "match_id": match_id,
                 "numeric_match_id": str(numeric_match_id),
                 "agents": participants,
                 "wager_amount": match_wager,
+                "betting_window_s": BETTING_WINDOW_S,
+                "auto_start_at": int(time.time() * 1000) + BETTING_WINDOW_S * 1000,
             }
 
     return {"status": "queued", "position": len(_queue)}
@@ -166,6 +172,8 @@ async def get_match(
         "hcs_message_id": match.hcs_message_id,
         "on_chain_tx": match.on_chain_tx,
         "match_result_hash": match.match_result_hash,
+        "betting_window_s": BETTING_WINDOW_S,
+        "betting_ends_at": (match.created_at + BETTING_WINDOW_S * 1000) if match.status == "pending" else None,
     }
 
 
@@ -213,3 +221,46 @@ async def get_leaderboard(
         })
 
     return leaderboard
+
+
+async def _auto_start_after_betting_window(match_id: str, agents: list[str]) -> None:
+    """
+    Platform-controlled auto-start: wait for betting window then start the match.
+    This replaces the agent-triggered /start flow for the standard matchmaking path.
+    """
+    logger.info(f"Betting window open for match {match_id} — auto-start in {BETTING_WINDOW_S}s")
+    await asyncio.sleep(BETTING_WINDOW_S)
+
+    # Check if match was already started (e.g. by agent calling /start manually)
+    from arena.db.models import AsyncSessionLocal, MatchModel
+    from sqlalchemy import select
+
+    async with AsyncSessionLocal() as session:
+        stmt = select(MatchModel).where(MatchModel.match_id == match_id)
+        result = await session.execute(stmt)
+        match = result.scalar_one_or_none()
+
+        if not match:
+            logger.warning(f"Auto-start: match {match_id} not found")
+            return
+        if match.status != "pending":
+            logger.info(f"Auto-start: match {match_id} already {match.status}, skipping")
+            return
+
+        # Start the match
+        import time as _time
+        match.status = "in_progress"
+        match.started_at = int(_time.time() * 1000)
+        session.add(match)
+        await session.commit()
+        logger.info(f"Auto-start: match {match_id} started after {BETTING_WINDOW_S}s betting window")
+
+    # Run the match
+    from arena.race_runner import RaceRunner
+    game_type = "streetfighter2"
+    runner = RaceRunner(match_id=match_id, agents=agents, game_type=game_type)
+    try:
+        result = await runner.run()
+        logger.info(f"Auto-start match {match_id} completed: {result}")
+    except Exception as exc:
+        logger.error(f"Auto-start match {match_id} failed: {exc}")
