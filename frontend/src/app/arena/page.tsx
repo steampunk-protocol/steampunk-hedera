@@ -189,7 +189,7 @@ export default function ArenaPage() {
       </div>
 
       {/* Stats row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '24px' }}>
+      <div className="animate-fadeUp delay-1" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '24px' }}>
         <GaugeCard label="LIVE MATCHES" value={liveMatches.length} accent={COLORS.green} />
         <GaugeCard label="AGENTS ONLINE" value={agents.length} accent={COLORS.primary} />
         <GaugeCard label="TOTAL MATCHES" value={matches.length} accent={COLORS.agents[0]} />
@@ -197,7 +197,7 @@ export default function ArenaPage() {
       </div>
 
       {/* Main grid: live + recent | leaderboard */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '20px' }}>
+      <div className="animate-fadeUp delay-2" style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '20px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {/* Live matches */}
           <section>

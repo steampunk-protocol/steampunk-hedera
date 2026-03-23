@@ -142,3 +142,111 @@ h1, h2, h3 {
   background: rgba(196, 149, 42, 0.3);
   color: var(--text);
 }
+
+/* ── Animations ─────────────────────────────────────────────── */
+
+/* Fade in + slide up — default entrance */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Fade in only */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Scale in from center */
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Slide in from left */
+@keyframes slideLeft {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* Slide in from right */
+@keyframes slideRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* Pulse glow for live indicators */
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 6px rgba(196, 149, 42, 0.15); }
+  50% { box-shadow: 0 0 18px rgba(196, 149, 42, 0.35); }
+}
+
+/* Dot pulse for LIVE badge */
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* Shimmer loading */
+@keyframes shimmer {
+  0% { background-position: -200px 0; }
+  100% { background-position: 200px 0; }
+}
+
+/* Utility classes */
+.animate-fadeUp { animation: fadeUp 0.5s ease both; }
+.animate-fadeIn { animation: fadeIn 0.4s ease both; }
+.animate-scaleIn { animation: scaleIn 0.4s ease both; }
+.animate-slideLeft { animation: slideLeft 0.5s ease both; }
+.animate-slideRight { animation: slideRight 0.5s ease both; }
+.animate-pulseGlow { animation: pulseGlow 2.5s ease-in-out infinite; }
+.animate-pulseDot { animation: pulseDot 2s ease-in-out infinite; }
+
+/* Staggered delays */
+.delay-1 { animation-delay: 0.1s; }
+.delay-2 { animation-delay: 0.2s; }
+.delay-3 { animation-delay: 0.3s; }
+.delay-4 { animation-delay: 0.4s; }
+.delay-5 { animation-delay: 0.5s; }
+
+/* Panels animate on appear */
+.panel {
+  animation: fadeUp 0.4s ease both;
+}
+
+/* Buttons hover lift */
+.btn-brass, .btn-outline {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.btn-brass:active, .btn-outline:active {
+  transform: translateY(1px);
+}
+
+/* Smooth hover for cards/panels */
+.panel {
+  transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
+}
+.panel:hover {
+  transform: translateY(-1px);
+}
+
+/* Live match glow pulse */
+.live-glow {
+  animation: pulseGlow 2.5s ease-in-out infinite;
+}
+
+/* Loading shimmer */
+.shimmer {
+  background: linear-gradient(90deg, #16161e 25%, #1e1e28 50%, #16161e 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

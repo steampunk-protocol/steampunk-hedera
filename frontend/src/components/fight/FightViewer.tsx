@@ -41,11 +41,10 @@ export function FightViewer({ players, frame_b64, tick, raceStatus, reasoningMap
   const isLive = raceStatus === 'in_progress'
 
   return (
-    <div className="panel" style={{
+    <div className={`panel ${isLive ? 'live-glow' : ''}`} style={{
       padding: 0, overflow: 'hidden',
       background: COLORS.bg,
       border: `1px solid ${isLive ? COLORS.primaryGlow : '#333'}`,
-      boxShadow: isLive ? `0 0 12px ${COLORS.primaryGlow}` : 'none',
       transition: 'border-color 0.3s, box-shadow 0.3s',
     }}>
       {/* Top bar: health bars */}

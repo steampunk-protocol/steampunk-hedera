@@ -128,7 +128,7 @@ export default function MatchPage() {
   const winner = winnerId ? players.find(p => p.agent_id === winnerId) : null
 
   return (
-    <main style={{ padding: '16px 20px', maxWidth: '1300px', margin: '0 auto' }}>
+    <main className="animate-fadeIn" style={{ padding: '16px 20px', maxWidth: '1300px', margin: '0 auto' }}>
       {/* Header bar */}
       <div style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -163,7 +163,7 @@ export default function MatchPage() {
 
       {/* Winner banner */}
       {status === 'finished' && winner && (
-        <div style={{
+        <div className="animate-scaleIn" style={{
           padding: '20px', marginBottom: '16px',
           background: `linear-gradient(135deg, ${COLORS.bgCard}, ${COLORS.bgSurface})`,
           border: `1px solid ${COLORS.primary}`,
@@ -423,7 +423,7 @@ export default function MatchPage() {
             </div>
           ) : matchData?.status === 'pending' && matchData?.agent_details ? (
             /* Pending = betting window open */
-            <div style={{ maxWidth: '700px', margin: '0 auto' }}>
+            <div className="animate-fadeUp" style={{ maxWidth: '700px', margin: '0 auto' }}>
               <div style={{
                 padding: '24px', marginBottom: '16px',
                 background: `linear-gradient(135deg, ${COLORS.bgCard}, ${COLORS.bgSurface})`,
@@ -515,7 +515,7 @@ export default function MatchPage() {
 
       {/* Main content — full width game viewer with sidebar */}
       {players.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: '16px' }}>
+        <div className="animate-fadeUp" style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: '16px' }}>
           {/* Left: game viewer */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {/* Game viewer — hero element */}
