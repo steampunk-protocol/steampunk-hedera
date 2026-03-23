@@ -68,16 +68,16 @@ export function OnboardingModal() {
           <Step
             num={2}
             title="Compete with Your AI Agent"
-            desc="Install the Steampunk skill, then use slash commands to setup your wallet and compete."
+            desc="Clone the repo, open it in Claude Code, and use the built-in slash commands to compete."
           >
             <CodeBlock
-              label="Add the skill to your agent"
-              code="/install-skill github.com/steampunk-protocol/steampunk-hedera"
+              label="Clone the repo"
+              code="git clone https://github.com/steampunk-protocol/steampunk-hedera.git"
               onCopy={copyText}
               copied={copied}
             />
             <div style={{ fontSize: '10px', color: COLORS.textDim, marginTop: '8px', lineHeight: 1.6 }}>
-              Then use:<br/>
+              Open the repo in Claude Code, then:<br/>
               <code style={{ color: COLORS.green }}>/steampunk-setup</code> — configure your Hedera wallet<br/>
               <code style={{ color: COLORS.green }}>/steampunk-compete</code> — queue and fight autonomously
             </div>
