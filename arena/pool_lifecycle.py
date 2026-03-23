@@ -1,10 +1,14 @@
 """
-PredictionPool on-chain lifecycle helpers.
+On-chain lifecycle helpers for PredictionPool and Wager contracts.
 
-Three phases:
-  1. createPool(matchId, agents)  — called when a match is created (queue.py)
-  2. lockPool(matchId)            — called when a match starts (race_runner.py)
-  3. settlePool(matchId, winner)  — called when a match settles (race_runner.py)
+PredictionPool phases:
+  1. createPool(matchId, agents)  — when match is created (queue.py)
+  2. lockPool(matchId)            — when match starts (race_runner.py)
+  3. settlePool(matchId, winner)  — when match settles (race_runner.py)
+
+Wager phases:
+  1. createWager(matchId, agents, amount) — when match is created (queue.py)
+  2. settleWager(matchId, winner)         — when match settles (race_runner.py)
 
 All calls are non-blocking (run via asyncio.to_thread) and wrapped in try/except
 so failures never crash the match lifecycle.
@@ -169,3 +173,117 @@ async def settle_pool_on_chain(match_id: str, numeric_match_id: int, winner_addr
         )
     except Exception as e:
         logger.error(f"PredictionPool.settlePool failed for match {match_id}: {e}")
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Wager lifecycle
+# ──────────────────────────────────────────────────────────────────────────────
+
+def _load_wager_contract(rpc_url: str, wager_address: str):
+    """Return (web3_instance, contract) for WagerV2."""
+    from web3 import Web3
+    import json as _json
+
+    w3 = Web3(Web3.HTTPProvider(rpc_url))
+    abis_dir = Path(__file__).parent.parent / "contracts" / "abis"
+    with open(abis_dir / "Wager.json") as f:
+        abi_data = _json.load(f)
+    wager_abi = abi_data.get("abi", abi_data)
+    wager = w3.eth.contract(
+        address=Web3.to_checksum_address(wager_address),
+        abi=wager_abi,
+    )
+    return w3, wager
+
+
+def _create_wager_sync(rpc_url: str, wager_address: str, numeric_match_id: int,
+                       agents: list[str], wager_amount_raw: int, arena_account):
+    """Blocking: call WagerV2.createMatch(matchId, agents, wagerAmount)."""
+    from web3 import Web3
+
+    w3, wager = _load_wager_contract(rpc_url, wager_address)
+    agent_addrs = [Web3.to_checksum_address(a) for a in agents if a != "0x" + "0" * 40]
+
+    tx = wager.functions.createMatch(
+        numeric_match_id, agent_addrs, wager_amount_raw
+    ).build_transaction({
+        "from": arena_account.address,
+        "nonce": w3.eth.get_transaction_count(arena_account.address),
+        "gas": 400000,
+    })
+    signed_tx = arena_account.sign_transaction(tx)
+    tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
+    receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
+    if receipt.status == 1:
+        logger.info(f"Wager.createMatch() succeeded: matchId={numeric_match_id}, amount={wager_amount_raw}")
+    else:
+        logger.error(f"Wager.createMatch() reverted: {tx_hash.hex()}")
+
+
+def _settle_wager_sync(rpc_url: str, wager_address: str, numeric_match_id: int,
+                       winner_address: str, arena_account):
+    """Blocking: call WagerV2.settle(matchId, winner)."""
+    from web3 import Web3
+
+    w3, wager = _load_wager_contract(rpc_url, wager_address)
+
+    tx = wager.functions.settle(
+        numeric_match_id,
+        Web3.to_checksum_address(winner_address),
+    ).build_transaction({
+        "from": arena_account.address,
+        "nonce": w3.eth.get_transaction_count(arena_account.address),
+        "gas": 300000,
+    })
+    signed_tx = arena_account.sign_transaction(tx)
+    tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
+    receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
+    if receipt.status == 1:
+        logger.info(f"Wager.settle() succeeded: matchId={numeric_match_id}, winner={winner_address}")
+        return tx_hash.hex()
+    else:
+        logger.error(f"Wager.settle() reverted: {tx_hash.hex()}")
+        return None
+
+
+async def create_wager_on_chain(match_id: str, agents: list[str], wager_amount_raw: int) -> None:
+    """Async wrapper: create a wager match when agents are paired."""
+    wager_address = os.environ.get("WAGER_ADDRESS", "")
+    rpc_url = os.environ.get("RPC_URL", DEFAULT_RPC_URL)
+    arena_account = _get_arena_account()
+
+    if not (wager_address and arena_account and rpc_url):
+        logger.warning("Wager env not configured — skipping createWager")
+        return
+    if wager_amount_raw <= 0:
+        logger.info("Wager amount is 0 — skipping createWager")
+        return
+
+    from arena.utils import match_id_to_uint256
+    numeric_match_id = match_id_to_uint256(match_id)
+
+    try:
+        await asyncio.to_thread(
+            _create_wager_sync, rpc_url, wager_address, numeric_match_id, agents, wager_amount_raw, arena_account,
+        )
+    except Exception as e:
+        logger.error(f"Wager.createMatch failed for match {match_id}: {e}")
+
+
+async def settle_wager_on_chain(match_id: str, numeric_match_id: int, winner_address: str) -> str | None:
+    """Async wrapper: settle wager when match ends. Returns tx hash or None."""
+    wager_address = os.environ.get("WAGER_ADDRESS", "")
+    rpc_url = os.environ.get("RPC_URL", DEFAULT_RPC_URL)
+    arena_account = _get_arena_account()
+
+    if not (wager_address and arena_account and rpc_url and winner_address):
+        logger.warning("Wager env not configured or no winner — skipping settleWager")
+        return None
+
+    try:
+        return await asyncio.to_thread(
+            _settle_wager_sync, rpc_url, wager_address, numeric_match_id, winner_address, arena_account,
+        )
+    except Exception as e:
+        logger.error(f"Wager.settle failed for match {match_id}: {e}")
+        return None

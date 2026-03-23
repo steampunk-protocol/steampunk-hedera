@@ -14,7 +14,7 @@ from sqlalchemy import select, desc, func
 
 from arena.db.models import get_session, AgentModel, MatchModel
 from arena.utils import match_id_to_uint256
-from arena.pool_lifecycle import create_pool_on_chain
+from arena.pool_lifecycle import create_pool_on_chain, create_wager_on_chain
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -39,7 +39,7 @@ class AgentRegistration(BaseModel):
 
 class QueueJoinRequest(BaseModel):
     agent_address: str
-    wager_amount: float = 100.0  # STEAM tokens (human-readable, 8 decimals)
+    wager_amount: float = 10.0  # STEAM entrance fee (human-readable, 8 decimals)
 
 
 @router.post("/register")
@@ -118,6 +118,11 @@ async def join_queue(
 
             # Create prediction pool on-chain so spectators can bet while match is pending
             asyncio.ensure_future(create_pool_on_chain(match_id, participants))
+
+            # Create wager on-chain (entrance fee escrow)
+            wager_raw = int(match_wager * (10 ** STEAM_DECIMALS))
+            if wager_raw > 0:
+                asyncio.ensure_future(create_wager_on_chain(match_id, participants, wager_raw))
 
             # Auto-start match after betting window
             asyncio.ensure_future(_auto_start_after_betting_window(match_id, participants))

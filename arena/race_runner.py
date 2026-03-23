@@ -279,8 +279,9 @@ class RaceRunner:
             logger.warning("ARENA_PRIVATE_KEY not set — skipping on-chain signature")
 
         # ── 2+3+3b. On-chain calls in parallel (independent, each wrapped in try/except) ──
-        from arena.pool_lifecycle import settle_pool_on_chain
+        from arena.pool_lifecycle import settle_pool_on_chain, settle_wager_on_chain
         winner_for_pool = None
+        wager_settle_tx = None
         for addr, pos in zip(normalized["agents"], normalized["finalPositions"]):
             if pos == 1 and addr != "0x" + "0" * 40:
                 winner_for_pool = addr
@@ -298,14 +299,11 @@ class RaceRunner:
                     logger.error(f"MatchProof.submitResult() tx reverted: {e}")
 
         async def _settle_wager():
-            if arena_account and rpc_url and wager_address:
-                try:
-                    await asyncio.to_thread(
-                        self._settle_wager_sync,
-                        rpc_url, wager_address, normalized, arena_account,
-                    )
-                except Exception as e:
-                    logger.error(f"Wager.settle() failed: {e}")
+            nonlocal wager_settle_tx
+            if winner_for_pool:
+                wager_settle_tx = await settle_wager_on_chain(
+                    self.match_id, normalized["matchId"], winner_for_pool
+                )
 
         async def _settle_pool():
             if winner_for_pool:
