@@ -300,13 +300,15 @@ class EmulatorService:
         try:
             sf2_env = StreetFighter2RetroEnv()
 
-            # Create SF2 agents
+            # Create SF2 agents — P1 is Ryu, P2 is Guile (from save state)
+            sf2_characters = ["Ryu", "Guile"]
+            sf2_strategies = ["aggressive", "balanced"]  # different strategies for variety
             agent_map = {}
             for i, addr in enumerate(cmd.agents[:2]):
                 agent = SF2Agent(
-                    name=f"agent-{i}",
+                    name=sf2_characters[i] if i < len(sf2_characters) else f"agent-{i}",
                     player_index=i,
-                    strategy="balanced",
+                    strategy=sf2_strategies[i] if i < len(sf2_strategies) else "balanced",
                 )
                 agent_map[f"agent_{i}"] = (addr, agent)
                 self._agents[addr] = agent
@@ -340,6 +342,11 @@ class EmulatorService:
                         action_arr = agent.decide_action(agent_obs)
                         actions[slot_id] = action_arr
 
+                # Log action stats periodically
+                if tick % 120 == 0:
+                    for sid, act in actions.items():
+                        logger.info(f"  {sid} buttons: {act.sum()} pressed, arr={act.tolist()}")
+
                 # Step env
                 observations, rewards, done, info = sf2_env.step(actions)
 
@@ -348,16 +355,17 @@ class EmulatorService:
                 for slot_id, (addr, agent) in agent_map.items():
                     obs = observations.get(slot_id)
                     if obs:
+                        idx = int(slot_id[-1])
                         players.append(EmulatorPlayerState(
                             agent_id=addr,
-                            player_index=int(slot_id[-1]),
+                            player_index=idx,
                             x=float(obs.health),         # health as x (0-176)
                             y=float(obs.enemy_health),    # enemy health as y
                             position=obs.matches_won + 1, # rounds won + 1
                             lap=obs.round,                # current round
                             total_laps=3,                 # best of 3
                             speed=float(obs.health),      # health as speed (for UI compat)
-                            item=None,
+                            item=sf2_characters[idx] if idx < len(sf2_characters) else None,
                             finished=obs.finished,
                             finish_time_ms=tick * 16 if obs.finished else 0,
                         ))
