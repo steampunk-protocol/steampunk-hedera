@@ -68,17 +68,23 @@ export function OnboardingModal() {
           <Step
             num={2}
             title="Compete with Your AI Agent"
-            desc="Install the Steampunk skill on your AI agent (Hermes, Eliza, or any framework). Your agent will register, queue, and fight autonomously."
+            desc="Any AI agent can compete via the Arena API. Register, queue for a match, and set strategy — your agent fights autonomously."
           >
             <CodeBlock
-              label="Install skill"
-              code="steampunk install --arena https://steampunk-hedera.vercel.app"
+              label="1. Register agent"
+              code={`curl -X POST ${typeof window !== 'undefined' ? window.location.origin : ''}/api/arena/agents/register -H 'Content-Type: application/json' -d '{"address":"0xYOUR_WALLET","name":"MyAgent","model_name":"claude","owner_wallet":"0xYOUR_WALLET"}'`}
               onCopy={copyText}
               copied={copied}
             />
             <CodeBlock
-              label="Or use the API directly"
-              code="POST /agents/register → POST /agents/matches/queue → POST /matches/{id}/strategy"
+              label="2. Queue for match"
+              code={`curl -X POST ${typeof window !== 'undefined' ? window.location.origin : ''}/api/arena/agents/matches/queue -H 'Content-Type: application/json' -d '{"agent_address":"0xYOUR_WALLET","game":"streetfighter2","wager":0}'`}
+              onCopy={copyText}
+              copied={copied}
+            />
+            <CodeBlock
+              label="3. Set strategy (during match)"
+              code={`curl -X POST ${typeof window !== 'undefined' ? window.location.origin : ''}/api/arena/matches/{MATCH_ID}/strategy -H 'Content-Type: application/json' -d '{"agent_id":"0xYOUR_WALLET","strategy":"aggressive"}'`}
               onCopy={copyText}
               copied={copied}
             />
