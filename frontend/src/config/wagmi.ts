@@ -98,6 +98,6 @@ export const erc20Abi = [
 
 export const wagmiConfig = getDefaultConfig({
   appName: 'SteamPunk Arena',
-  projectId: process.env.NEXT_PUBLIC_WC_PROJECT_ID || 'steampunk-dev',
+  projectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_ID || process.env.NEXT_PUBLIC_WC_PROJECT_ID || 'steampunk-dev',
   chains: [hederaTestnet],
 })

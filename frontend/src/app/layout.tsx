@@ -34,6 +34,7 @@ export default function RootLayout({
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
               <Link href="/" style={{
+                display: 'flex', alignItems: 'center', gap: '8px',
                 color: '#c4952a',
                 textDecoration: 'none',
                 fontFamily: '"Cinzel", serif',
@@ -42,6 +43,7 @@ export default function RootLayout({
                 letterSpacing: '0.05em',
                 fontWeight: 'bold',
               }}>
+                <img src="/logo.png" alt="" width={24} height={24} style={{ borderRadius: '4px' }} />
                 STEAMPUNK
               </Link>
               <Link href="/arena" style={{
