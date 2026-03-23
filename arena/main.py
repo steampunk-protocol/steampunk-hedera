@@ -126,6 +126,65 @@ async def chat_send(req: ChatSendRequest):
         raise HTTPException(status_code=503, detail="Node.js not available for HCS publishing")
 
 
+class FaucetRequest(BaseModel):
+    wallet_address: str
+    amount: float = 1000  # STEAM tokens (human-readable)
+
+
+@app.post("/faucet", tags=["faucet"])
+async def faucet(req: FaucetRequest):
+    """
+    Testnet STEAM token faucet. Transfers STEAM from operator treasury.
+    Max 10,000 STEAM per request.
+    """
+    import asyncio
+    from web3 import Web3
+
+    amount = min(req.amount, 10000)
+    rpc_url = os.environ.get("RPC_URL", "https://testnet.hashio.io/api")
+    private_key = os.environ.get("ORACLE_PRIVATE_KEY", os.environ.get("DEPLOYER_KEY", ""))
+    steam_address = os.environ.get("STEAM_TOKEN_EVM_ADDRESS", "")
+
+    if not private_key or not steam_address:
+        raise HTTPException(status_code=503, detail="Faucet not configured — missing operator key or STEAM address")
+
+    try:
+        w3 = Web3(Web3.HTTPProvider(rpc_url))
+        # HTS tokens exposed as ERC-20 on Hedera EVM
+        erc20_abi = [
+            {"inputs": [{"name": "to", "type": "address"}, {"name": "amount", "type": "uint256"}],
+             "name": "transfer", "outputs": [{"name": "", "type": "bool"}],
+             "stateMutability": "nonpayable", "type": "function"},
+        ]
+        contract = w3.eth.contract(address=Web3.to_checksum_address(steam_address), abi=erc20_abi)
+        account = w3.eth.account.from_key(private_key)
+
+        # 8 decimals for HTS STEAM
+        raw_amount = int(amount * 10**8)
+        to_addr = Web3.to_checksum_address(req.wallet_address)
+
+        tx = contract.functions.transfer(to_addr, raw_amount).build_transaction({
+            "from": account.address,
+            "nonce": w3.eth.get_transaction_count(account.address),
+            "gas": 300000,
+            "gasPrice": w3.eth.gas_price,
+        })
+        signed = account.sign_transaction(tx)
+        tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
+        receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=30)
+
+        return {
+            "status": "success",
+            "amount": amount,
+            "token": "STEAM",
+            "to": req.wallet_address,
+            "tx_hash": receipt.transactionHash.hex(),
+        }
+    except Exception as e:
+        logger.error(f"Faucet failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Faucet transfer failed: {str(e)}")
+
+
 @app.get("/health")
 async def health():
     return {"status": "ok", "service": "steampunk-arena-hedera"}

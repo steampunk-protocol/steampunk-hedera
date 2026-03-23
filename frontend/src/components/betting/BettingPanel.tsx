@@ -6,11 +6,13 @@ import { formatUnits, parseUnits } from 'viem'
 import type { BettingUpdateMessage, PlayerState } from '@/types/ws'
 import { CONTRACTS, predictionPoolAbi, erc20Abi } from '@/config/wagmi'
 import { matchIdToUint256 } from '@/lib/matchId'
+import { ARENA_API } from '@/config/arena'
+import { COLORS } from '@/config/theme'
 
 // HTS STEAM token uses 8 decimals
 const STEAM_DECIMALS = 8
 
-const AGENT_COLORS = ['#B8860B', '#B87333', '#4ade80', '#60a5fa']
+const AGENT_COLORS = [COLORS.agents[0], COLORS.agents[1], COLORS.agents[2], COLORS.agents[3]]
 
 interface Props {
   matchId: string
@@ -153,8 +155,30 @@ export function BettingPanel({ matchId, bettingState, players }: Props) {
               borderRadius: '4px',
             }}>
               {balance !== undefined && (
-                <div style={{ fontSize: '11px', color: '#666', marginBottom: '8px' }}>
-                  Balance: {formatUnits(balance, STEAM_DECIMALS)} STEAM
+                <div style={{ fontSize: '11px', color: '#666', marginBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>Balance: {formatUnits(balance, STEAM_DECIMALS)} STEAM</span>
+                  <button
+                    onClick={async () => {
+                      if (!address) return
+                      try {
+                        const res = await fetch(`${ARENA_API}/faucet`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ wallet_address: address, amount: 1000 }),
+                        })
+                        if (res.ok) alert('1000 STEAM sent to your wallet!')
+                        else alert('Faucet failed — try again')
+                      } catch { alert('Faucet unavailable') }
+                    }}
+                    style={{
+                      background: 'none', border: `1px solid ${COLORS.primary}`,
+                      color: COLORS.primary, borderRadius: '3px',
+                      padding: '2px 8px', fontSize: '9px', cursor: 'pointer',
+                      fontFamily: '"Space Mono", monospace',
+                    }}
+                  >
+                    Get STEAM
+                  </button>
                 </div>
               )}
 
