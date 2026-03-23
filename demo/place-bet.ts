@@ -20,7 +20,7 @@ import { join, resolve } from "path";
 
 // --- Constants ---
 const STEAM_TOKEN_ID = "0.0.8187171";
-const PREDICTION_POOL_EVM = "0xdCC851392396269953082b394B689bfEB8E13FD5";
+const PREDICTION_POOL_EVM = "0x00000000000000000000000000000000007f58e7";
 const HASHSCAN_BASE = "https://hashscan.io/testnet/transaction";
 const MIRROR_BASE = "https://testnet.mirrornode.hedera.com/api/v1";
 const STEAM_DECIMALS = 8;

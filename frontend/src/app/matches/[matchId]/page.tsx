@@ -13,7 +13,7 @@ import { COLORS, FONTS, MATCH_LABELS } from '@/config/theme'
 import { ARENA_API, HCS_MATCH_RESULTS_TOPIC } from '@/config/arena'
 
 const MIRROR_NODE = 'https://testnet.mirrornode.hedera.com/api/v1'
-const PREDICTION_POOL = '0xdCC851392396269953082b394B689bfEB8E13FD5'
+const PREDICTION_POOL = '0x00000000000000000000000000000000007f58e7'
 
 interface PoolTx {
   hash: string
@@ -349,7 +349,7 @@ export default function MatchPage() {
                         }}
                       >Match Proof Tx ↗</a>
                     )}
-                    <a href={`https://hashscan.io/testnet/contract/0xdCC851392396269953082b394B689bfEB8E13FD5`}
+                    <a href={`https://hashscan.io/testnet/contract/0x00000000000000000000000000000000007f58e7`}
                       target="_blank" rel="noopener noreferrer"
                       style={{
                         fontSize: '9px', color: COLORS.primary, fontFamily: FONTS.mono,

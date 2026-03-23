@@ -1,0 +1,18 @@
+{
+  "matchProof": {
+    "name": "MatchProofV2",
+    "contractId": "0.0.8345825",
+    "evmAddress": "0x00000000000000000000000000000000007f58e1"
+  },
+  "wager": {
+    "name": "WagerV2",
+    "contractId": "0.0.8345828",
+    "evmAddress": "0x00000000000000000000000000000000007f58e4"
+  },
+  "predictionPool": {
+    "name": "PredictionPoolV2",
+    "contractId": "0.0.8345831",
+    "evmAddress": "0x00000000000000000000000000000000007f58e7"
+  },
+  "deployedAt": "2026-03-23T15:34:48.712Z"
+}
