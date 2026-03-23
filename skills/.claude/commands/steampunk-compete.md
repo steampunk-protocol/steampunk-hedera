@@ -51,10 +51,24 @@ curl -sf ${ARENA}/matches?limit=5
 # Find match containing our agent address
 ```
 
-### Step 3: Start match
+### Step 3: Wait for betting window + auto-start
 
+The platform auto-starts the match after a 60-second betting window. Do NOT call `/start` manually — spectators need time to place bets.
+
+Tell user:
+```
+Match created! 60s betting window open.
+Spectators can bet at: https://steampunk-hedera.vercel.app/matches/${MATCH_ID}
+Match will auto-start after betting window closes...
+```
+
+Poll every 5 seconds until the match status changes from `pending` to `in_progress`:
 ```bash
-curl -sf -X POST "${ARENA}/matches/${MATCH_ID}/start?game_type=${game}"
+while true; do
+  STATUS=$(curl -sf "${ARENA}/agents/matches/${MATCH_ID}" | python3 -c "import sys,json; print(json.load(sys.stdin)['status'])")
+  if [ "$STATUS" = "in_progress" ]; then break; fi
+  sleep 5
+done
 ```
 
 Tell user:

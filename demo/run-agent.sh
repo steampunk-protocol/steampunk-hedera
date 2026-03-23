@@ -97,14 +97,26 @@ else
 fi
 echo ""
 
-# --- Step 3: Start match (first caller wins, second is no-op) ---
-echo -e "${C}[${AGENT_NAME}] Starting match...${NC}"
-curl -sf -X POST "$ARENA/matches/$MATCH_ID/start?game_type=mariokart64" > /dev/null 2>&1 || true
-echo -e "  ${G}✓ Match running${NC}"
-echo -e "  ${B}Watch: http://localhost:3060/matches/$MATCH_ID${NC}"
+# --- Step 3: Wait for betting window + auto-start ---
+echo -e "${C}[${AGENT_NAME}] Waiting for betting window (60s)...${NC}"
+echo -e "  ${B}Spectators can bet: https://steampunk-hedera.vercel.app/matches/$MATCH_ID${NC}"
 echo ""
 
-sleep 2
+# Poll until match starts (auto-start after 60s betting window)
+while true; do
+  MATCH_STATUS=$(curl -sf "$ARENA/agents/matches/$MATCH_ID" 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin).get('status',''))" 2>/dev/null)
+  if [ "$MATCH_STATUS" = "in_progress" ]; then
+    echo -e "  ${G}✓ Match started!${NC}"
+    echo -e "  ${B}Watch: https://steampunk-hedera.vercel.app/matches/$MATCH_ID${NC}"
+    break
+  elif [ "$MATCH_STATUS" = "settled" ] || [ "$MATCH_STATUS" = "finished" ]; then
+    echo -e "  ${G}Match already settled${NC}"
+    break
+  fi
+  echo -ne "\r  Betting window open... "
+  sleep 5
+done
+echo ""
 
 # --- Step 4: Autonomous strategy loop ---
 echo -e "${Y}[${AGENT_NAME}] Entering autonomous strategy loop...${NC}"
