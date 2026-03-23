@@ -36,6 +36,8 @@ interface MatchData {
   hcs_message_id: string | null
   on_chain_tx: string | null
   match_result_hash: string | null
+  betting_window_s: number | null
+  betting_ends_at: number | null
   created_at: number
   ended_at: number | null
 }
@@ -79,6 +81,29 @@ export default function MatchPage() {
       })
       .catch(() => {})
   }, [matchData])
+
+  // Countdown for betting window
+  const [countdown, setCountdown] = useState<number | null>(null)
+  useEffect(() => {
+    if (!matchData?.betting_ends_at || matchData.status !== 'pending') {
+      setCountdown(null)
+      return
+    }
+    const tick = () => {
+      const remaining = Math.max(0, Math.floor((matchData.betting_ends_at! - Date.now()) / 1000))
+      setCountdown(remaining)
+      if (remaining <= 0) {
+        // Re-fetch match data to get new status
+        fetch(`${ARENA_API}/agents/matches/${matchId}`)
+          .then(r => r.ok ? r.json() : null)
+          .then(d => d && setMatchData(d))
+          .catch(() => {})
+      }
+    }
+    tick()
+    const interval = setInterval(tick, 1000)
+    return () => clearInterval(interval)
+  }, [matchData?.betting_ends_at, matchData?.status, matchId])
 
   const hcsTopicId = raceState?.hcs_match_topic_id || HCS_MATCH_RESULTS_TOPIC
   const { messages: hcsMessages, loading: hcsLoading } = useHCSFeed(hcsTopicId)
@@ -396,6 +421,85 @@ export default function MatchPage() {
               }}>●</div>
               Match is in progress — connecting to live feed…
             </div>
+          ) : matchData?.status === 'pending' && matchData?.agent_details ? (
+            /* Pending = betting window open */
+            <div style={{ maxWidth: '700px', margin: '0 auto' }}>
+              <div style={{
+                padding: '24px', marginBottom: '16px',
+                background: `linear-gradient(135deg, ${COLORS.bgCard}, ${COLORS.bgSurface})`,
+                border: `1px solid ${COLORS.green}`,
+                borderRadius: '8px',
+                boxShadow: `0 0 20px ${COLORS.greenGlow}`,
+                textAlign: 'center',
+              }}>
+                <div style={{
+                  fontSize: '8px', color: COLORS.green,
+                  textTransform: 'uppercase', letterSpacing: '4px',
+                  fontFamily: FONTS.heading, marginBottom: '8px',
+                }}>BETTING WINDOW OPEN</div>
+
+                {countdown !== null && countdown > 0 ? (
+                  <div style={{
+                    fontSize: '28px', color: COLORS.green, fontFamily: FONTS.heading,
+                    fontWeight: 'bold', marginBottom: '8px',
+                    textShadow: `0 0 12px ${COLORS.greenGlow}`,
+                  }}>{countdown}s</div>
+                ) : (
+                  <div style={{
+                    fontSize: '12px', color: COLORS.primary, fontFamily: FONTS.mono,
+                    marginBottom: '8px',
+                  }}>Starting soon...</div>
+                )}
+                <div style={{
+                  fontSize: '10px', color: COLORS.textMuted, marginBottom: '16px',
+                  fontFamily: FONTS.mono,
+                }}>
+                  Place your bets before the match begins!
+                </div>
+
+                {/* Agents */}
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', alignItems: 'center', marginBottom: '16px' }}>
+                  {matchData.agent_details.map((agent, i) => (
+                    <div key={agent.address} style={{ textAlign: 'center' }}>
+                      <div style={{
+                        fontSize: '16px', fontWeight: 'bold',
+                        color: COLORS.agents[i] ?? COLORS.text,
+                        fontFamily: FONTS.heading,
+                      }}>{agent.name}</div>
+                      <div style={{ fontSize: '9px', color: COLORS.textDim, fontFamily: FONTS.mono }}>
+                        {agent.address.slice(0, 10)}...{agent.address.slice(-6)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{
+                  fontSize: '20px', color: COLORS.primary,
+                  fontFamily: FONTS.heading, marginBottom: '8px',
+                }}>VS</div>
+              </div>
+
+              {/* Betting Panel during pending */}
+              <BettingPanel
+                matchId={matchId}
+                bettingState={null}
+                players={matchData.agent_details.map((a, i) => ({
+                  agent_id: a.address,
+                  wallet_address: a.address,
+                  model_name: a.name,
+                  character: '',
+                  position: i + 1,
+                  lap: 1,
+                  total_laps: 3,
+                  item: null,
+                  speed: 0,
+                  x: 176,
+                  y: 176,
+                  gap_to_leader_ms: 0,
+                  finished: false,
+                }))}
+              />
+            </div>
           ) : (
             <div style={{ color: COLORS.textDim, fontSize: '13px' }}>
               <div style={{
@@ -581,12 +685,39 @@ export default function MatchPage() {
               )}
             </div>
 
-            {/* Betting */}
-            <BettingPanel
-              matchId={matchId}
-              bettingState={bettingState}
-              players={players}
-            />
+            {/* Betting — locked during live match, open during pending */}
+            {status === 'in_progress' ? (
+              <div className="panel" style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '12px' }}>
+                <div className="label">Prediction Pool</div>
+                <div style={{
+                  padding: '12px', background: COLORS.bgCard, borderRadius: '4px',
+                  border: `1px solid ${COLORS.red}`, textAlign: 'center',
+                }}>
+                  <div style={{ fontSize: '9px', color: COLORS.red, fontFamily: FONTS.mono, letterSpacing: '0.1em' }}>
+                    BETTING CLOSED
+                  </div>
+                  <div style={{ fontSize: '10px', color: COLORS.textDim, marginTop: '4px' }}>
+                    Pool locked — match in progress
+                  </div>
+                </div>
+                {bettingState && (
+                  <div style={{ borderTop: `1px solid ${COLORS.borderSubtle}`, paddingTop: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span className="label">Total Pool</span>
+                      <span style={{ color: COLORS.primary, fontWeight: 'bold', fontSize: '12px' }}>
+                        {(bettingState.total_pool_wei / 1e8).toFixed(2)} STEAM
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <BettingPanel
+                matchId={matchId}
+                bettingState={bettingState}
+                players={players}
+              />
+            )}
           </div>
         </div>
       )}
