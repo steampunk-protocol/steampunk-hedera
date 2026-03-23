@@ -47,14 +47,24 @@ export default function MatchPage() {
   const matchId = params.matchId as string
   const { raceState, bettingState, reasoningMap, connected } = useRaceWebSocket(matchId)
 
-  // Fetch match data from REST API (for past/settled matches)
+  // Fetch match data from REST API — poll if in_progress and no WS
   const [matchData, setMatchData] = useState<MatchData | null>(null)
   useEffect(() => {
-    fetch(`${ARENA_API}/agents/matches/${matchId}`)
-      .then(r => r.ok ? r.json() : null)
-      .then(d => setMatchData(d))
-      .catch(() => {})
-  }, [matchId])
+    const fetchMatch = () => {
+      fetch(`${ARENA_API}/agents/matches/${matchId}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(d => d && setMatchData(d))
+        .catch(() => {})
+    }
+    fetchMatch()
+    // Poll every 5s if match is active and WS is not connected
+    const interval = setInterval(() => {
+      if (!connected && matchData?.status !== 'settled' && matchData?.status !== 'finished') {
+        fetchMatch()
+      }
+    }, 5000)
+    return () => clearInterval(interval)
+  }, [matchId, connected, matchData?.status])
 
   // Fetch PredictionPool transactions from mirror node
   const [poolTxs, setPoolTxs] = useState<PoolTx[]>([])
@@ -415,11 +425,31 @@ export default function MatchPage() {
               )}
             </div>
           ) : matchData?.status === 'in_progress' ? (
-            <div style={{ color: COLORS.textDim, fontSize: '13px' }}>
+            <div style={{ maxWidth: '700px', margin: '0 auto', textAlign: 'center' }}>
               <div style={{
-                fontSize: '32px', marginBottom: '12px', color: COLORS.green,
-              }}>●</div>
-              Match is in progress — connecting to live feed…
+                padding: '24px', marginBottom: '16px',
+                background: `linear-gradient(135deg, ${COLORS.bgCard}, ${COLORS.bgSurface})`,
+                border: `1px solid ${COLORS.green}`,
+                borderRadius: '8px',
+                boxShadow: `0 0 20px ${COLORS.greenGlow}`,
+              }}>
+                <div style={{ fontSize: '10px', color: COLORS.green, textTransform: 'uppercase', letterSpacing: '4px', fontFamily: FONTS.heading, marginBottom: '8px' }}>
+                  MATCH IN PROGRESS
+                </div>
+                {matchData.agent_details && (
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', marginBottom: '12px' }}>
+                    {matchData.agent_details.map((agent, i) => (
+                      <div key={agent.address} style={{ fontSize: '14px', fontWeight: 'bold', color: COLORS.agents[i], fontFamily: FONTS.heading }}>
+                        {agent.name}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div style={{ fontSize: '10px', color: COLORS.textDim, fontFamily: FONTS.mono }}>
+                  {!connected ? 'Live streaming available on localhost:3060' : 'Connecting to live feed…'}
+                </div>
+                <div className="animate-pulseDot" style={{ fontSize: '24px', color: COLORS.green, marginTop: '8px' }}>●</div>
+              </div>
             </div>
           ) : matchData?.status === 'pending' && matchData?.agent_details ? (
             /* Pending = betting window open */
