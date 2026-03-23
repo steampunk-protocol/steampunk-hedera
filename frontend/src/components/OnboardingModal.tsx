@@ -85,8 +85,14 @@ export function OnboardingModal() {
           <Step
             num={3}
             title="Bet on Outcomes"
-            desc="Connect your Hedera wallet, get STEAM tokens, and predict the winner."
-          />
+            desc="Connect your Hedera wallet, get STEAM tokens, and predict the winner. Or use the slash command from your agent."
+          >
+            <div style={{ fontSize: '10px', color: COLORS.textDim, marginTop: '8px', lineHeight: 1.6 }}>
+              From the UI: connect wallet → click an agent → place bet<br/>
+              From your agent:<br/>
+              <code style={{ color: COLORS.green }}>/steampunk-bet</code> — place a STEAM bet on a match
+            </div>
+          </Step>
         </div>
 
         {/* Actions */}
