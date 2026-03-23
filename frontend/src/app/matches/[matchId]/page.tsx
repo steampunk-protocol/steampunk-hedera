@@ -288,6 +288,79 @@ export default function MatchPage() {
                 </div>
               )}
 
+              {/* Match Settlement Summary */}
+              <div className="panel" style={{ background: COLORS.bgSurface, padding: '12px', marginBottom: '16px' }}>
+                <div className="label" style={{ marginBottom: '8px', fontSize: '8px' }}>MATCH SETTLEMENT</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {/* Winner prize */}
+                  <div style={{
+                    padding: '10px', background: COLORS.bgCard, borderRadius: '4px',
+                    border: `1px solid ${COLORS.green}`,
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <span style={{ fontSize: '10px', color: COLORS.green, fontFamily: FONTS.mono }}>WINNER</span>
+                        <div style={{ fontSize: '12px', color: COLORS.text, fontWeight: 'bold' }}>
+                          {matchData.winner_name || 'Unknown'}
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '11px', color: COLORS.green, fontFamily: FONTS.mono }}>
+                          Match Prize Collected
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Betting pool info */}
+                  {poolTxs.length > 0 && (
+                    <div style={{ padding: '10px', background: COLORS.bgCard, borderRadius: '4px' }}>
+                      <div style={{ fontSize: '10px', color: COLORS.primary, fontFamily: FONTS.mono, marginBottom: '4px' }}>
+                        PREDICTION POOL
+                      </div>
+                      <div style={{ fontSize: '11px', color: COLORS.text }}>
+                        {poolTxs.length} bets placed · Pool settled on-chain
+                      </div>
+                      <div style={{ fontSize: '9px', color: COLORS.textDim, marginTop: '4px' }}>
+                        Winning bettors receive proportional share of the pool
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Verification links */}
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {matchData.hcs_message_id && (
+                      <a href={`https://hashscan.io/testnet/topic/0.0.8187173`}
+                        target="_blank" rel="noopener noreferrer"
+                        style={{
+                          fontSize: '9px', color: COLORS.primary, fontFamily: FONTS.mono,
+                          textDecoration: 'none', padding: '4px 8px',
+                          background: 'rgba(196,149,42,0.1)', borderRadius: '3px',
+                        }}
+                      >HCS Proof #{matchData.hcs_message_id} ↗</a>
+                    )}
+                    {matchData.on_chain_tx && (
+                      <a href={`https://hashscan.io/testnet/transaction/${matchData.on_chain_tx}`}
+                        target="_blank" rel="noopener noreferrer"
+                        style={{
+                          fontSize: '9px', color: COLORS.primary, fontFamily: FONTS.mono,
+                          textDecoration: 'none', padding: '4px 8px',
+                          background: 'rgba(196,149,42,0.1)', borderRadius: '3px',
+                        }}
+                      >Match Proof Tx ↗</a>
+                    )}
+                    <a href={`https://hashscan.io/testnet/contract/0xdCC851392396269953082b394B689bfEB8E13FD5`}
+                      target="_blank" rel="noopener noreferrer"
+                      style={{
+                        fontSize: '9px', color: COLORS.primary, fontFamily: FONTS.mono,
+                        textDecoration: 'none', padding: '4px 8px',
+                        background: 'rgba(196,149,42,0.1)', borderRadius: '3px',
+                      }}
+                    >PredictionPool Contract ↗</a>
+                  </div>
+                </div>
+              </div>
+
               {/* HCS Activity for settled matches */}
               {hcsTopicId && (
                 <div className="panel" style={{ background: COLORS.bgSurface, padding: '12px' }}>

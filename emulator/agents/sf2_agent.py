@@ -155,11 +155,15 @@ class SF2Agent:
 
         # Strategy weights: (approach, attack_heavy, block, special, retreat)
         self._strategy_weights: dict[str, tuple[float, ...]] = {
-            "aggressive":    (0.35, 0.30, 0.05, 0.25, 0.05),
-            "defensive":     (0.05, 0.10, 0.40, 0.10, 0.35),
-            "balanced":      (0.20, 0.20, 0.20, 0.20, 0.20),
-            "special_focus": (0.15, 0.10, 0.10, 0.55, 0.10),
+            "aggressive":    (0.30, 0.35, 0.05, 0.25, 0.05),
+            "defensive":     (0.05, 0.10, 0.45, 0.05, 0.35),
+            "balanced":      (0.20, 0.25, 0.15, 0.25, 0.15),
+            "special_focus": (0.10, 0.10, 0.10, 0.60, 0.10),
         }
+
+        # Per-agent randomized thresholds for health-aware strategy shifts
+        self._low_hp_threshold = 0.25 + random.random() * 0.15   # 0.25-0.40
+        self._finish_threshold = 0.15 + random.random() * 0.15   # 0.15-0.30
 
         self.update_strategy(strategy)
 
@@ -206,9 +210,9 @@ class SF2Agent:
 
         # Health-aware strategy shift
         effective_strategy = self.current_strategy
-        if effective_strategy == "balanced" and observation.my_health < 0.3:
+        if effective_strategy == "balanced" and observation.my_health < self._low_hp_threshold:
             effective_strategy = "defensive"
-        elif effective_strategy == "balanced" and observation.opp_health < 0.2:
+        elif effective_strategy == "balanced" and observation.opp_health < self._finish_threshold:
             effective_strategy = "aggressive"
 
         weights = self._strategy_weights[effective_strategy]

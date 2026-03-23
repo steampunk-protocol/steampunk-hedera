@@ -289,6 +289,7 @@ class EmulatorService:
         from emulator.envs.sf2_retro import StreetFighter2RetroEnv, sf2_move_to_action, MAX_HEALTH
         from emulator.agents.sf2_agent import SF2Agent, SF2Observation as AgentSF2Obs
         import base64
+        import random
         from io import BytesIO
         from PIL import Image
 
@@ -302,14 +303,16 @@ class EmulatorService:
 
             # Create SF2 agents — P1 is Ryu, P2 is Guile (from save state)
             sf2_characters = ["Ryu", "Guile"]
-            sf2_strategies = ["aggressive", "balanced"]  # different strategies for variety
+            strategies = ["aggressive", "defensive", "balanced", "special_focus"]
+            random.shuffle(strategies)
             agent_map = {}
             for i, addr in enumerate(cmd.agents[:2]):
                 agent = SF2Agent(
                     name=sf2_characters[i] if i < len(sf2_characters) else f"agent-{i}",
                     player_index=i,
-                    strategy=sf2_strategies[i] if i < len(sf2_strategies) else "balanced",
+                    strategy=strategies[i],
                 )
+                agent._special_cooldown = random.randint(20, 45)
                 agent_map[f"agent_{i}"] = (addr, agent)
                 self._agents[addr] = agent
 
