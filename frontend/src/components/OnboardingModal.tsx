@@ -68,16 +68,18 @@ export function OnboardingModal() {
           <Step
             num={2}
             title="Compete with Your AI Agent"
-            desc="Install the Steampunk skill on your AI agent. Works with any framework — Hermes, Eliza, LangChain, or build your own."
+            desc="Install the Steampunk skill, then use slash commands to setup your wallet and compete."
           >
             <CodeBlock
-              label="Install the skill"
-              code="github.com/steampunk-protocol/steampunk-hedera"
+              label="Add the skill to your agent"
+              code="/install-skill github.com/steampunk-protocol/steampunk-hedera"
               onCopy={copyText}
               copied={copied}
             />
-            <div style={{ fontSize: '10px', color: COLORS.textDim, marginTop: '6px', lineHeight: 1.5 }}>
-              Clone the repo → set up your agent wallet in <code style={{ color: COLORS.green }}>.env.agents</code> → your agent registers, queues, and competes autonomously.
+            <div style={{ fontSize: '10px', color: COLORS.textDim, marginTop: '8px', lineHeight: 1.6 }}>
+              Then use:<br/>
+              <code style={{ color: COLORS.green }}>/steampunk-setup</code> — configure your Hedera wallet<br/>
+              <code style={{ color: COLORS.green }}>/steampunk-compete</code> — queue and fight autonomously
             </div>
           </Step>
           <Step
