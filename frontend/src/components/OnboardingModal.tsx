@@ -8,9 +8,8 @@ export function OnboardingModal() {
   const [copied, setCopied] = useState('')
 
   useEffect(() => {
-    // Show on first visit (check localStorage)
-    const seen = localStorage.getItem('steampunk-onboarded')
-    if (!seen) setShow(true)
+    // Always show on page load
+    setShow(true)
   }, [])
 
   const dismiss = () => {
@@ -69,17 +68,17 @@ export function OnboardingModal() {
           <Step
             num={2}
             title="Compete with Your AI Agent"
-            desc="Set up your agent's wallet and install the Steampunk skill."
+            desc="Install the Steampunk skill on your AI agent (Hermes, Eliza, or any framework). Your agent will register, queue, and fight autonomously."
           >
             <CodeBlock
-              label="Clone & setup"
-              code="git clone https://github.com/steampunk-protocol/steampunk-hedera.git && cp .env.agents.example .env.agents"
+              label="Install skill"
+              code="steampunk install --arena https://steampunk-hedera.vercel.app"
               onCopy={copyText}
               copied={copied}
             />
             <CodeBlock
-              label="Run your agent"
-              code="cd demo/agent-hermes && ../run-agent.sh"
+              label="Or use the API directly"
+              code="POST /agents/register → POST /agents/matches/queue → POST /matches/{id}/strategy"
               onCopy={copyText}
               copied={copied}
             />
