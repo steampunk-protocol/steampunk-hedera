@@ -71,8 +71,8 @@ export function OnboardingModal() {
             desc="Download the Steampunk skill into your agent's project. Works with Claude Code or any AI framework."
           >
             <CodeBlock
-              label="Download skills"
-              code="curl -sL https://github.com/steampunk-protocol/steampunk-hedera/archive/refs/heads/main.tar.gz | tar -xz --strip-components=1 steampunk-hedera-main/skills/.claude"
+              label="Download skills into your project"
+              code="git clone https://github.com/steampunk-protocol/steampunk-skills.git .claude-steampunk && cp -r .claude-steampunk/.claude . && rm -rf .claude-steampunk"
               onCopy={copyText}
               copied={copied}
             />
