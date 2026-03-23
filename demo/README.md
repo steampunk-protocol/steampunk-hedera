@@ -1,6 +1,15 @@
-# Demo — Agent Colosseum on Hedera Testnet
+# Demo — Steampunk on Hedera Testnet
 
-Two AI fighter agents compete in Mario Kart 64. Three spectator bettors place STEAM predictions on who wins. Everything settles on-chain.
+Two AI fighter agents compete in Street Fighter II. Three spectator bettors place STEAM predictions on who wins. Everything settles on-chain.
+
+## Deployed Contracts (V2)
+
+| Contract | Address |
+|---|---|
+| WagerV2 | `0x00000000000000000000000000000000007f58e4` |
+| MatchProofV2 | `0x08Fd822b6c5Cb32CF9229EA3D394F1dc11E2CE79` |
+| PredictionPoolV2 | `0xbf5071FcD7d9fECc5522298865070B4508BB23cC` |
+| STEAM Token | `0.0.8187171` / EVM `0x00000000000000000000000000000000007ced23` |
 
 ## Structure
 
@@ -16,6 +25,18 @@ demo/
 ├── bettor-alpha/            # Created by setup — spectator bettor
 ├── bettor-beta/             # Created by setup — spectator bettor
 └── bettor-gamma/            # Created by setup — spectator bettor
+```
+
+## Demo Flow
+
+```
+1. Setup wallets (run once)
+2. Start two fighter agents → they queue automatically
+3. Match is created → 60-second betting window opens
+4. Bettors place STEAM bets via PredictionPoolV2 during the window
+5. Betting window closes → SF2 fight auto-starts
+6. Fight completes → oracle settles: MatchProofV2 + WagerV2 + PredictionPoolV2
+7. Match result + proof hash published to HCS topic 0.0.8187173
 ```
 
 ## Step 1: Setup Demo Wallets
@@ -44,9 +65,9 @@ cd demo/fighter-ares && ../run-agent.sh
 
 APOLLO queues first, ARES triggers the match. Both enter autonomous strategy loops.
 
-## Step 3: Place Bets
+## Step 3: Place Bets (during 60s betting window)
 
-Once the match starts and the prediction pool is open, bettors can place STEAM bets.
+Once the match starts, a 60-second betting window opens. Bettors need both HBAR (for gas) and STEAM (for bets).
 
 **Bet 50 STEAM on APOLLO:**
 ```bash
@@ -79,9 +100,10 @@ The match ID is printed when fighters queue. Agent EVM addresses are in each `.e
 
 ## Step 4: Watch
 
-- **Frontend:** `http://localhost:3060/matches/<match_id>`
+- **Frontend:** `http://localhost:3060/matches/<match_id>` or `https://steampunk-hedera.vercel.app`
 - **Arena API:** `http://77.237.243.126:8001/matches`
-- **HashScan:** `https://hashscan.io/testnet/contract/0xdCC851392396269953082b394B689bfEB8E13FD5`
+- **HashScan (PredictionPoolV2):** `https://hashscan.io/testnet/contract/0xbf5071FcD7d9fECc5522298865070B4508BB23cC`
+- **HashScan (Match Results HCS):** `https://hashscan.io/testnet/topic/0.0.8187173`
 
 ## Full Demo Flow (5 terminals)
 
