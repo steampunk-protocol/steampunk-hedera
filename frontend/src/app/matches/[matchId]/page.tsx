@@ -13,7 +13,7 @@ import { COLORS, FONTS, MATCH_LABELS } from '@/config/theme'
 import { ARENA_API, HCS_MATCH_RESULTS_TOPIC } from '@/config/arena'
 
 const MIRROR_NODE = 'https://testnet.mirrornode.hedera.com/api/v1'
-const PREDICTION_POOL = '0xbf5071FcD7d9fECc5522298865070B4508BB23cC'
+const PREDICTION_POOL = process.env.NEXT_PUBLIC_PREDICTION_POOL_ADDRESS || '0xbf5071FcD7d9fECc5522298865070B4508BB23cC'
 
 interface PoolTx {
   hash: string
@@ -288,7 +288,7 @@ export default function MatchPage() {
                     {matchData.match_result_hash && (
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: '10px', color: COLORS.textDim }}>Result Hash</span>
-                        <a href={`https://hashscan.io/testnet/contract/0x08Fd822b6c5Cb32CF9229EA3D394F1dc11E2CE79`}
+                        <a href={`https://hashscan.io/testnet/contract/${process.env.NEXT_PUBLIC_MATCH_PROOF_ADDRESS || '0x08Fd822b6c5Cb32CF9229EA3D394F1dc11E2CE79'}`}
                           target="_blank" rel="noopener noreferrer"
                           style={{ fontSize: '10px', color: COLORS.primary, fontFamily: FONTS.mono, textDecoration: 'none' }}
                         >{matchData.match_result_hash.slice(0, 14)}… ↗</a>
@@ -398,7 +398,7 @@ export default function MatchPage() {
                         }}
                       >Match Proof Tx ↗</a>
                     )}
-                    <a href={`https://hashscan.io/testnet/contract/0xbf5071FcD7d9fECc5522298865070B4508BB23cC`}
+                    <a href={`https://hashscan.io/testnet/contract/${PREDICTION_POOL}`}
                       target="_blank" rel="noopener noreferrer"
                       style={{
                         fontSize: '9px', color: COLORS.primary, fontFamily: FONTS.mono,
