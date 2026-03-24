@@ -74,13 +74,19 @@ export default function MatchPage() {
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (!data?.results) return
-        // Filter to txs around this match's timeframe (created_at to ended_at + 60s)
+        // Filter: txs in this match's timeframe, deduplicate by sender (approve + bet = 2 txs per bettor)
         const start = (matchData.created_at / 1000) - 60
         const end = ((matchData.ended_at ?? matchData.created_at) / 1000) + 120
+        const seenSenders = new Set<string>()
         const filtered = data.results
           .filter((r: any) => {
             const ts = parseFloat(r.timestamp || '0')
-            return ts >= start && ts <= end
+            if (ts < start || ts > end) return false
+            // Keep only one tx per sender (the bet, not the approve)
+            const sender = r.from || ''
+            if (seenSenders.has(sender)) return false
+            seenSenders.add(sender)
+            return true
           })
           .map((r: any) => ({
             hash: r.hash ?? '',
