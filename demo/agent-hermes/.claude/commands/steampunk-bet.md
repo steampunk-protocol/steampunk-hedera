@@ -1,125 +1,80 @@
 # Steampunk Bet
 
-Place a STEAM token bet on a match as a spectator. Predict which agent will win and earn from the prediction pool.
+Place a STEAM token bet on a match. Predict which agent wins and earn from the prediction pool.
 
 ## Arguments
 
 **Format**: `$ARGUMENTS`
 
-The user can specify bets in natural language. Parse flexibly:
+Parse flexibly — examples:
+- `50 on P2` → 50 STEAM on player 2 of latest pending match
+- `bet on player 2 for 50` → same
+- `100 on HERMES` → 100 STEAM on agent named HERMES
+- `--match <id> --agent <addr> --amount 50` → explicit
 
-**Examples:**
-- `bet on player 2 for 50` → bet 50 STEAM on the 2nd agent in the most recent pending/live match
-- `bet 100 on FIGHTER-APOLLO` → bet 100 STEAM on agent named FIGHTER-APOLLO
-- `--match <id> --agent <addr> --amount 50` → explicit format
-- `50 on HERMES` → bet 50 STEAM on agent named HERMES
-- `player 1 100 STEAM` → bet 100 STEAM on 1st agent
-
-**Parsing rules:**
-- If no match specified, find the most recent `pending` or `in_progress` match from the arena
-- If agent specified by name (e.g. "HERMES", "player 2"), resolve to EVM address from match data
-- "player 1" / "P1" = first agent in match, "player 2" / "P2" = second agent
-- Default amount: 50 STEAM
+Default amount: 50 STEAM.
 
 ## Prerequisites
 
-Check that `.env.agents` exists in the current directory. If not, tell the user:
-```
-No bettor configured. Run /steampunk-setup first to create a wallet.
-Then /steampunk-faucet to get STEAM tokens.
-```
+Check `.env.agents` in current directory. If missing: "Run /steampunk-setup first, then /steampunk-faucet."
 
-Load bettor config from `.env.agents`:
-- AGENT_NAME, AGENT_ACCOUNT_ID, AGENT_PRIVATE_KEY
+Load: AGENT_NAME, AGENT_ACCOUNT_ID, AGENT_PRIVATE_KEY
 
-Arena API: `https://steampunk-server.robbyn.xyz` (or `STEAMPUNK_ARENA` env var)
+Arena: `https://steampunk-server.robbyn.xyz`
 
 ## Execution
 
-### Step 1: Find the match
+### Step 1: Find match + resolve agent
 
-If no match ID provided, fetch recent matches:
+Fetch recent matches and find the latest `pending` one:
 ```bash
-MATCHES=$(curl -sf "${ARENA}/matches?limit=5")
+MATCHES=$(curl -sf "https://steampunk-server.robbyn.xyz/matches?limit=5")
 ```
 
-Find the most recent `pending` match (betting open). If none pending, use most recent `in_progress`.
+Pick the first `pending` match. If none, use first `in_progress` (warn: may fail).
 
-Show the match to the user:
-```
-Found match: ${match_id}
-  FIGHTER-APOLLO vs FIGHTER-ARES
-  Status: ${status}
-  Betting: ${open_or_closed}
-```
-
-If status is not `pending`, warn: "Betting pool is locked — bets may fail"
-
-### Step 2: Resolve agent
-
-If user said "player 2" or a name, fetch match details:
+Get match details:
 ```bash
-MATCH_DATA=$(curl -sf "${ARENA}/agents/matches/${MATCH_ID}")
+MATCH_DATA=$(curl -sf "https://steampunk-server.robbyn.xyz/agents/matches/${MATCH_ID}")
 ```
 
-Map to EVM address from `agent_details` array:
-- "player 1" / "P1" → agent_details[0].address
-- "player 2" / "P2" → agent_details[1].address
-- "HERMES" → find by name match in agent_details
+Resolve agent from user input:
+- "P1" / "player 1" → `agent_details[0]`
+- "P2" / "player 2" → `agent_details[1]`
+- Name like "HERMES" → find in `agent_details` by name
 
 Show:
 ```
-Betting ${AMOUNT} STEAM on ${AGENT_NAME} (${AGENT_ADDR})
+Match: ${MATCH_ID} — ${agent1_name} vs ${agent2_name}
+Betting 50 STEAM on ${chosen_name} (${chosen_address})
 ```
 
-### Step 3: Derive bettor EVM address
+### Step 2: Place bet immediately
+
+The place-bet script is at the project root under `demo/place-bet.ts`. Find it relative to the current directory:
 
 ```bash
-AGENT_NUM=$(echo "$AGENT_ACCOUNT_ID" | awk -F. '{print $3}')
-BETTOR_ADDR="0x$(printf '%040x' "$AGENT_NUM")"
+# Find the script - check common locations
+SCRIPT=""
+for p in "../place-bet.ts" "../../demo/place-bet.ts" "../demo/place-bet.ts" "demo/place-bet.ts"; do
+  [ -f "$p" ] && SCRIPT="$p" && break
+done
 ```
 
-### Step 4: Place bet
-
-Use the place-bet.ts script from the project:
+Run it:
 ```bash
-npx tsx demo/place-bet.ts --dir "$(pwd)" --match "${MATCH_ID}" --agent "${AGENT_ADDR}" --amount ${AMOUNT}
+npx tsx "${SCRIPT}" --dir "$(pwd)" --match "${MATCH_ID}" --agent "${AGENT_ADDR}" --amount ${AMOUNT}
 ```
 
-If the script isn't available, use `cast` (foundry):
-```bash
-AMOUNT_RAW=$(python3 -c "print(int(${AMOUNT} * 10**8))")
-MATCH_UINT=$(cast keccak "$(cast --from-utf8 "${MATCH_ID}")")
+**IMPORTANT**: Do NOT try `cast` or any other method. The Hedera JSON-RPC relay doesn't work with standard EVM tools for HTS token operations. Only `place-bet.ts` (which uses `@hashgraph/sdk`) works.
 
-# Approve STEAM
-cast send 0x00000000000000000000000000000000007ced23 "approve(address,uint256)" \
-  0xbf5071FcD7d9fECc5522298865070B4508BB23cC ${AMOUNT_RAW} \
-  --rpc-url https://testnet.hashio.io/api --private-key ${PRIVATE_KEY}
-
-# Place bet
-cast send 0xbf5071FcD7d9fECc5522298865070B4508BB23cC \
-  "placeBet(uint256,address,uint256)" ${MATCH_UINT} ${AGENT_ADDR} ${AMOUNT_RAW} \
-  --rpc-url https://testnet.hashio.io/api --private-key ${PRIVATE_KEY}
-```
-
-### Step 5: Report result
+### Step 3: Report
 
 ```
 === BET PLACED ===
-Bettor: ${BETTOR_NAME}
+${BETTOR_NAME}: ${AMOUNT} STEAM on ${AGENT_NAME}
 Match: ${MATCH_ID}
-Backing: ${AGENT_NAME} (${AGENT_ADDR})
-Amount: ${AMOUNT} STEAM
-Tx: https://hashscan.io/testnet/transaction/${tx_hash}
-
 Watch: https://steampunk-hedera.vercel.app/matches/${MATCH_ID}
 ```
 
-### Step 6: Optionally watch result
-
-If user asked to watch, poll every 10s until settled:
-```
-=== MATCH SETTLED ===
-Winner: ${winner_name}
-Your bet: ${won_or_lost}
-```
+If it fails with CONTRACT_REVERT, check if betting window expired.

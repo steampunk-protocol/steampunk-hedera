@@ -26,7 +26,7 @@ MIN_PLAYERS = 2
 MAX_PLAYERS = 4
 QUEUE_TIMEOUT_S = 60
 STEAM_DECIMALS = 8
-BETTING_WINDOW_S = 60  # seconds between match creation and auto-start
+BETTING_WINDOW_S = 120  # seconds between match creation and auto-start (2 min for Hedera tx speed)
 
 
 class AgentRegistration(BaseModel):
