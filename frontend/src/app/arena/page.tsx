@@ -407,30 +407,32 @@ function PendingMatchCard({
   timeSince: (ms: number) => string
 }) {
   return (
-    <div className="panel" style={{
-      display: 'grid', gridTemplateColumns: '1fr auto',
-      alignItems: 'center', gap: '12px',
-      borderColor: `${COLORS.blue}33`,
-      opacity: 0.8,
-    }}>
-      <div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '4px' }}>
-          <span style={{
-            fontSize: '8px', padding: '2px 8px',
-            background: STATUS_STYLES.pending.bg,
-            color: STATUS_STYLES.pending.color,
-            borderRadius: '2px',
-            fontFamily: FONTS.mono,
-          }}>PENDING</span>
+    <Link href={`/matches/${match.match_id}`} style={{ textDecoration: 'none' }}>
+      <div className="panel" style={{
+        display: 'grid', gridTemplateColumns: '1fr auto',
+        alignItems: 'center', gap: '12px',
+        borderColor: `${COLORS.green}44`,
+        cursor: 'pointer',
+      }}>
+        <div>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '4px' }}>
+            <span style={{
+              fontSize: '8px', padding: '2px 8px',
+              background: 'rgba(34, 197, 94, 0.12)',
+              color: COLORS.green,
+              borderRadius: '2px',
+              fontFamily: FONTS.mono,
+            }}>BETTING OPEN</span>
+          </div>
+          <div style={{ fontSize: '12px', color: COLORS.text }}>
+            {match.agents.map(a => agentName(a)).join(' vs ')}
+          </div>
         </div>
-        <div style={{ fontSize: '12px', color: COLORS.textMuted }}>
-          {match.agents.map(a => agentName(a)).join(' vs ')}
+        <div style={{ fontSize: '11px', color: COLORS.textDim }}>
+          {timeSince(match.created_at)}
         </div>
       </div>
-      <div style={{ fontSize: '11px', color: COLORS.textDim }}>
-        {timeSince(match.created_at)}
-      </div>
-    </div>
+    </Link>
   )
 }
 
