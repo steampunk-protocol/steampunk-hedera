@@ -219,11 +219,18 @@ export default function MatchPage() {
                 borderRadius: '8px',
                 boxShadow: `0 0 20px ${COLORS.primaryGlow}`,
               }}>
-                <div style={{
-                  fontSize: '10px', color: COLORS.primary,
-                  textTransform: 'uppercase', letterSpacing: '4px',
-                  fontFamily: FONTS.heading, marginBottom: '12px',
-                }}>Match Complete</div>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', alignItems: 'center', marginBottom: '12px' }}>
+                  <span style={{
+                    fontSize: '10px', color: COLORS.primary,
+                    textTransform: 'uppercase', letterSpacing: '4px',
+                    fontFamily: FONTS.heading,
+                  }}>Match Complete</span>
+                  <span style={{
+                    fontSize: '8px', padding: '2px 8px',
+                    background: COLORS.green, color: COLORS.bg,
+                    borderRadius: '2px', fontFamily: FONTS.mono, fontWeight: 'bold',
+                  }}>SETTLED</span>
+                </div>
 
                 {/* Agent names + addresses */}
                 <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', alignItems: 'center', marginBottom: '16px' }}>
@@ -281,7 +288,10 @@ export default function MatchPage() {
                     {matchData.match_result_hash && (
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: '10px', color: COLORS.textDim }}>Result Hash</span>
-                        <span style={{ fontSize: '10px', color: COLORS.text, fontFamily: FONTS.mono }}>{matchData.match_result_hash.slice(0, 10)}...</span>
+                        <a href={`https://hashscan.io/testnet/contract/0x08Fd822b6c5Cb32CF9229EA3D394F1dc11E2CE79`}
+                          target="_blank" rel="noopener noreferrer"
+                          style={{ fontSize: '10px', color: COLORS.primary, fontFamily: FONTS.mono, textDecoration: 'none' }}
+                        >{matchData.match_result_hash.slice(0, 14)}… ↗</a>
                       </div>
                     )}
                     {matchData.hcs_message_id && (
@@ -410,11 +420,11 @@ export default function MatchPage() {
                       style={{ fontSize: '9px', color: COLORS.primary, fontFamily: FONTS.mono, textDecoration: 'none' }}
                     >{hcsTopicId} ↗</a>
                   </div>
-                  {hcsMessages.filter(m => !m.parsed?.match_id || m.parsed.match_id === matchId).length === 0 ? (
+                  {hcsMessages.filter(m => m.parsed?.match_id === matchId).length === 0 ? (
                     <p style={{ color: COLORS.textDim, fontSize: '11px' }}>{hcsLoading ? 'Loading...' : 'No messages for this match'}</p>
                   ) : (
                     <div style={{ maxHeight: '160px', overflowY: 'auto' }}>
-                      {hcsMessages.filter(m => !m.parsed?.match_id || m.parsed.match_id === matchId).slice(0, 10).map((msg) => (
+                      {hcsMessages.filter(m => m.parsed?.match_id === matchId).slice(0, 10).map((msg) => (
                         <div key={msg.sequence_number} style={{
                           padding: '4px 0', borderBottom: `1px solid ${COLORS.borderSubtle}`,
                           fontSize: '10px', display: 'flex', justifyContent: 'space-between',
