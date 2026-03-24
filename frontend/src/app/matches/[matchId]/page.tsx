@@ -81,9 +81,9 @@ export default function MatchPage() {
           .filter((r: any) => {
             const ts = parseFloat(r.timestamp || '0')
             if (ts < start || ts > end) return false
-            // Only placeBet function calls (0x5b7b5f9d), not createPool/lockPool/settlePool
+            // Only placeBet (0x51317b4e), not createPool/lockPool/settlePool
             const func = r.function_parameters || ''
-            return func.startsWith('0x5b7b5f9d')
+            return func.startsWith('0x51317b4e')
             return true
           })
           .map((r: any) => ({
