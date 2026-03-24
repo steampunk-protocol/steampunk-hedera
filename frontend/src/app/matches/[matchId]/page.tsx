@@ -190,16 +190,14 @@ export default function MatchPage() {
             marginTop: '4px', fontFamily: FONTS.heading,
           }}>{winner.model_name}</div>
           {raceState?.match_result_hash && (
-            <a
-              href={`https://hashscan.io/testnet/transaction/${raceState.match_result_hash}`}
-              target="_blank" rel="noopener noreferrer"
+            <div
               style={{
-                fontSize: '10px', color: COLORS.primary, marginTop: '8px',
-                fontFamily: FONTS.mono, textDecoration: 'none', display: 'block',
+                fontSize: '10px', color: COLORS.textMuted, marginTop: '8px',
+                fontFamily: FONTS.mono,
               }}
             >
-              On-chain proof: {raceState.match_result_hash.slice(0, 20)}… ↗
-            </a>
+              Result hash: {raceState.match_result_hash.slice(0, 20)}…
+            </div>
           )}
         </div>
       )}
