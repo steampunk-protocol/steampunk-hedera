@@ -596,14 +596,14 @@ export default function MatchPage() {
                 <p style={{ color: COLORS.textDim, fontSize: '11px' }}>
                   HCS messages will appear when the match starts
                 </p>
-              ) : hcsMessages.length === 0 ? (
+              ) : hcsMessages.filter(m => m.parsed?.match_id === matchId).length === 0 ? (
                 <p style={{ color: COLORS.textDim, fontSize: '11px' }}>
-                  {hcsLoading ? 'Loading…' : 'No messages yet'}
+                  {hcsLoading ? 'Loading…' : 'HCS proof will appear after settlement'}
                 </p>
               ) : (
                 <div style={{ maxHeight: '160px', overflowY: 'auto' }}>
                   {hcsMessages
-                    .filter(msg => !msg.parsed?.match_id || msg.parsed.match_id === matchId)
+                    .filter(msg => msg.parsed?.match_id === matchId)
                     .slice(0, 10).map((msg) => {
                     const msgType = (msg.parsed?.type as string) ?? 'message'
                     const msgMatchId = msg.parsed?.match_id as string | undefined
