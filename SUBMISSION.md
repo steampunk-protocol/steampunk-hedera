@@ -26,7 +26,8 @@ Steampunk is an open arena where autonomous AI agents compete in retro games, wa
 | **Agent Identity** | HCS-11 profiles — on-chain agent metadata (name, capabilities, type) |
 | **Token** | HTS STEAM token (fungible, 8 decimals) — created via Hedera Token Service |
 | **Smart Contracts** | Solidity (Foundry) deployed via Hedera JSON-RPC Relay — WagerV2.sol, MatchProofV2.sol, PredictionPoolV2.sol |
-| **Arena Server** | Python FastAPI + SQLite + WebSocket broadcasting |
+| **Arena Server** | Python FastAPI + SQLite + WSS broadcasting (Cloudflare + Traefik) |
+| **Slash Commands** | 4 Claude Code skills: /steampunk-setup, /steampunk-faucet, /steampunk-compete, /steampunk-bet |
 | **Game Emulator** | stable-retro (libretro) + Genesis core — runs Street Fighter II headlessly |
 | **Agent Strategy API** | REST endpoints for external agents to read game state and set strategy |
 | **Frontend** | Next.js 14 (App Router) + RainbowKit + wagmi + TypeScript |
@@ -47,7 +48,8 @@ Steampunk is an open arena where autonomous AI agents compete in retro games, wa
 | MatchProofV2 Contract | `0x08Fd822b6c5Cb32CF9229EA3D394F1dc11E2CE79` |
 | WagerV2 Contract | `0x16B216D3423111650d33934dfD3d87FEE4740a86` |
 | PredictionPoolV2 Contract | `0xbf5071FcD7d9fECc5522298865070B4508BB23cC` |
-| Arena Server | `http://77.237.243.126:8001` |
+| Arena Server | `https://steampunk-server.robbyn.xyz` |
+| Arena WSS | `wss://steampunk-server.robbyn.xyz` |
 
 ---
 
@@ -58,7 +60,8 @@ Steampunk is an open arena where autonomous AI agents compete in retro games, wa
 | **GitHub Repo** | https://github.com/steampunk-protocol/steampunk-hedera |
 | **Live Demo** | https://steampunk-hedera.vercel.app |
 | **Demo Video** | *(YouTube URL — TO BE RECORDED)* |
-| **Pitch Deck** | *(PDF in repo — TO BE CREATED)* |
+| **Pitch Deck** | `pitch-deck.html` in repo (11 slides, print to PDF) |
+| **Skills Repo** | https://github.com/steampunk-protocol/steampunk-skills |
 | **HCS Messages** | https://hashscan.io/testnet/topic/0.0.8205003 |
 | **STEAM Token** | https://hashscan.io/testnet/token/0.0.8187171 |
 
@@ -84,7 +87,9 @@ Steampunk is an open arena where autonomous AI agents compete in retro games, wa
 - Entrance fees via Wager.createMatch + depositFor
 - Varied AI strategies per match (aggressive, defensive, balanced)
 - Agent reasoning broadcast during fights
-- 3 slash commands: /steampunk-setup, /steampunk-compete, /steampunk-bet
+- 4 slash commands: /steampunk-setup, /steampunk-faucet, /steampunk-compete, /steampunk-bet
+- Natural language betting: "bet on player 2 for 50"
+- WSS live streaming via Cloudflare + Traefik (works on Vercel frontend)
 - Live demo with auto-refreshing dashboard
 
 ### Integration (15%)
@@ -115,8 +120,14 @@ Steampunk is an open arena where autonomous AI agents compete in retro games, wa
 ## What You Still Need (TODO)
 
 - [ ] Record demo video (≤5 min) and upload to YouTube
-- [ ] Create pitch deck PDF (use the HTML generator below or make slides)
-- [x] Deploy frontend to Vercel
-- [x] Verify repo is public
+- [x] Create pitch deck (pitch-deck.html — 11 slides, print to PDF)
+- [x] Deploy frontend to Vercel (https://steampunk-hedera.vercel.app)
+- [x] Verify repo is public (https://github.com/steampunk-protocol/steampunk-hedera)
+- [x] Arena server live (https://steampunk-server.robbyn.xyz)
+- [x] WSS streaming working (wss://steampunk-server.robbyn.xyz)
+- [x] All contracts deployed and working (V2, non-upgradeable)
+- [x] Full on-chain settlement: createPool, createWager, depositFor, lockPool, settlePool
+- [x] HCS match result publishing with proof hash
+- [x] 4 slash commands working
 - [ ] Fill out submission form on StackUp
-- [ ] Submit before **March 23, 11:59 PM ET**
+- [ ] Submit HOL bounty separately
