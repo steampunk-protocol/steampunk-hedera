@@ -47,7 +47,7 @@
 ### 1:40-2:00 — Browser: Pending Match
 **Show**: Click pending match → countdown timer + "BETTING OPEN"
 
-**Say**: "On the frontend — pending match with countdown. Spectators can bet from browser or CLI."
+**Say**: "On the frontend — pending match with countdown. Spectators place bets via CLI or browser wallet."
 
 ---
 

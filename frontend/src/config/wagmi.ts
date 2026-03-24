@@ -12,10 +12,10 @@ const hederaTestnet = {
 
 // Contract addresses — read from env vars (set after deployment)
 export const CONTRACTS = {
-  matchProof: (process.env.NEXT_PUBLIC_MATCH_PROOF_ADDRESS || '0x0000000000000000000000000000000000000000') as `0x${string}`,
-  wager: (process.env.NEXT_PUBLIC_WAGER_ADDRESS || '0x0000000000000000000000000000000000000000') as `0x${string}`,
-  predictionPool: (process.env.NEXT_PUBLIC_PREDICTION_POOL_ADDRESS || '0x0000000000000000000000000000000000000000') as `0x${string}`,
-  steamToken: (process.env.NEXT_PUBLIC_STEAM_TOKEN_ADDRESS || '0x0000000000000000000000000000000000000000') as `0x${string}`,
+  matchProof: ((process.env.NEXT_PUBLIC_MATCH_PROOF_ADDRESS || '').trim() || '0x08Fd822b6c5Cb32CF9229EA3D394F1dc11E2CE79') as `0x${string}`,
+  wager: ((process.env.NEXT_PUBLIC_WAGER_ADDRESS || '').trim() || '0x16B216D3423111650d33934dfD3d87FEE4740a86') as `0x${string}`,
+  predictionPool: ((process.env.NEXT_PUBLIC_PREDICTION_POOL_ADDRESS || '').trim() || '0xbf5071FcD7d9fECc5522298865070B4508BB23cC') as `0x${string}`,
+  steamToken: ((process.env.NEXT_PUBLIC_STEAM_TOKEN_ADDRESS || '').trim() || '0x00000000000000000000000000000000007ced23') as `0x${string}`,
 } as const
 
 // PredictionPool ABI — only the functions the frontend calls
